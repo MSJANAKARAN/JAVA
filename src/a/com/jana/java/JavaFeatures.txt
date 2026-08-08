@@ -1,0 +1,203 @@
+Java 7 to Java 21 – Must-Know Features (Java Cheat Sheet)
+
+  --------------------------------------------------------------------------------------------------------
+  Java Version Feature                            Preview           Stable Version One-Line Explanation
+                                                  Introduced                       
+  ------------ ---------------------------------- ----------------- -------------- -----------------------
+  1.0 (1996)   JVM, Bytecode, AWT, Applets        1.0               1.0            Foundation of Java
+                                                                                   platform.
+
+  1.1          JDBC                               1.1               1.1            Standard database
+                                                                                   connectivity API.
+
+  1.1          Reflection                         1.1               1.1            Inspect and invoke
+                                                                                   classes at runtime.
+
+  1.2 (1997)   Collections Framework              1.2               1.2            Standard data
+                                                                                   structures API.
+
+  1.2 		   Swing                              1.2               1.2            Rich desktop GUI
+                                                                                   toolkit.
+
+  1.3 (2000)   Only Hotspot JVM                   1.3               1.3            Foundation of modern
+  																				   JVM and JIT compilation.
+
+  1.4 (2002)   Assertions                         1.4               1.4            Runtime debugging
+                                                                                   checks.
+
+  1.4          NIO                                1.4               1.4            New I/O and
+                                                                                   buffers/channels.
+
+  1.4          Regular Expressions                1.4               1.4            Pattern matching
+                                                                                   API.
+
+  5  (2004)    Generics                           5                 5              Type-safe
+                                                                                   collections.
+
+  5            Annotations                        5                 5              Metadata for code.
+
+  5            Enum                               5                 5              Type-safe
+                                                                                   constants.
+
+  5            Enhanced for-loop                  5                 5              Easier collection
+                                                                                   iteration.
+
+  5            Autoboxing/Unboxing                5                 5              Automatic
+                                                                                   primitive-wrapper
+                                                                                   conversion.
+
+  5            Varargs                            5                 5              Variable-length
+                                                                                   arguments.
+  
+  6  (2006)    JDBC 4.0                           6                 6              JDBC evolution.
+
+  7  (2011)    Try-with-Resources                 7                 7              Automatically closes
+                                                                                   resources like files
+                                                                                   and DB connections.
+
+  7            Multi-Catch                        7                 7              Catch multiple
+                                                                                   exception types in one
+                                                                                   catch block.
+
+  7            Diamond Operator (<>)              7                 7              Reduces generic type
+                                                                                   boilerplate.
+
+  7            NIO.2 (Files, Path)                7                 7              Modern file system API
+                                                                                   replacing File.
+
+  8  (2014)    Lambda Expressions                 8                 8              Enables functional
+                                                                                   programming with
+                                                                                   concise syntax.
+
+  8            Functional Interfaces              8                 8              Interface with a single
+                                                                                   abstract method.
+
+  8            Stream API                         8                 8              Declarative processing
+                                                                                   of collections.
+
+  8            Method References                  8                 8              Shorter syntax for
+                                                                                   calling existing
+                                                                                   methods.
+
+  8            Optional                           8                 8              Helps avoid
+                                                                                   NullPointerException.
+
+  8            Date & Time API                    8                 8              Modern immutable
+                                                                                   date/time API.
+
+  8            Default Methods                    8                 8              Add methods to
+                                                                                   interfaces without
+                                                                                   breaking
+                                                                                   implementations.
+
+  8            CompletableFuture                  8                 8              Supports asynchronous
+                                                                                   programming.
+
+  9  (2017)    Module System (JPMS)               9                 9              Organizes applications
+                                                                                   into modules.
+
+  9            JShell                             9                 9              Interactive Java REPL.
+
+  9            Collection Factory Methods         9                 9              Immutable collections
+                                                                                   using List.of(),
+                                                                                   Set.of(), etc.
+
+  10  (2018)   Local Variable Type Inference      10                10             Compiler infers local
+               (var)                                                               variable types.
+
+  11  (2018)   HttpClient API                     11                11             Modern HTTP client with
+                                                                                   HTTP/2 support.
+
+  11           String Methods                     11                11             Added isBlank(),
+                                                                                   repeat(), lines(),
+                                                                                   strip().
+
+  11           Files.readString()/writeString()   11                11             Simplifies text file
+                                                                                   I/O.
+
+  11           Optional.isEmpty()                 11                11             Cleaner alternative to
+                                                                                   !isPresent().
+
+  11           Single File Source Execution       11                11             Run .java files
+                                                                                   directly.
+
+  12  (2019)   Switch Expressions                 12                14             Switch returns values
+                                                                                   using -> syntax.
+
+  13  (2019)   Text Blocks                        13 (Preview)      15             Multi-line string
+                                                                                   literals.
+
+  14  (2020)   Helpful NullPointerExceptions      14                14             Better NPE diagnostics.
+
+  14           Records                            14 (Preview)      16             Concise immutable data
+                                                                                   classes.
+
+  14           Pattern Matching for instanceof    14 (Preview)      16             Combines type check and
+                                                                                   cast.
+
+  15  (2020)   Sealed Classes                     15 (Preview)      17             Restricts inheritance.
+
+  16  (2021)   Records                            —                 16             Records became
+                                                                                   standard.
+
+  16           Pattern Matching for instanceof    —                 16             Feature became
+                                                                                   standard.
+
+  17  (2021)   Sealed Classes                     —                 17             Feature became
+                                                                                   standard.
+
+  17           Strong Encapsulation               17                17             Restricts JDK internal
+                                                                                   APIs.
+
+  18  (2022)   UTF-8 by Default                   18                18             UTF-8 is the default
+                                                                                   charset.
+
+  19  (2022)   Virtual Threads                    19 (Preview)      21             Lightweight threads.
+
+  19           Record Patterns                    19 (Preview)      21             Destructure records in
+                                                                                   patterns.
+
+  20  (2023)   Scoped Values                      20 (Incubator)    25             Immutable context
+                                                                                   sharing across threads.
+
+  21  (2023)   Virtual Threads                    —                 21             Standardized
+                                                                                   lightweight threads.
+
+  21           Pattern Matching for switch        17 (Preview)      21             Type-based switch
+                                                                                   matching.
+
+  21           Record Patterns                    —                 21             Standardized record
+                                                                                   patterns.
+
+  21           Sequenced Collections              21                21             First/last operations
+                                                                                   for collections.
+
+  22  (2024)   Foreign Function & Memory API      14                22             Native interop
+                                                                                   without JNI.
+
+  22           Unnamed Variables & Patterns       22                22             Ignore unused
+                                                                                   variables.
+
+  23  (2024)   Markdown Javadoc                   23                Preview        Markdown
+                                                                                   documentation
+                                                                                   comments.
+
+  24  (2025)   Primitive Patterns                 24                Preview        Pattern matching
+                                                                                   for primitives.
+
+  25  (2025)   Scoped Values                      —                 25             Finalized feature.
+
+  --------------------------------------------------------------------------------------------------------
+
+  Highest Priority Features
+
+-   Java 5: Generics, Annotations, Enum
+-   Java 7: Try-with-Resources, NIO.2
+-   Java 8: Lambda, Streams, Optional, Date/Time API
+-   Java 9: Modules, JShell
+-   Java 10: var
+-   Java 11: HttpClient, String/File APIs
+-   Java 14–17: Switch Expressions, Text Blocks, Records, Pattern
+    Matching, Sealed Classes
+-   Java 21: Virtual Threads, Pattern Matching for switch, Record
+    Patterns

@@ -1,0 +1,498 @@
+This is a **good interview-level solution**, especially if you completed it within **30–40 minutes**. You correctly demonstrated the main OOP concepts. If I were interviewing you for a Java Full Stack role, here's how I'd review it.
+
+# Overall Score: **7.8/10**
+
+| Area                 |  Score |
+| -------------------- | -----: |
+| Encapsulation        |   8/10 |
+| Inheritance          |   8/10 |
+| Abstraction          |   9/10 |
+| Runtime Polymorphism |   9/10 |
+| Java Coding Style    |   7/10 |
+| OO Design            | 6.5/10 |
+| Banking Logic        |   8/10 |
+
+---
+
+# 👍 What you did well
+
+## 1. Abstraction ✔
+
+Good use of an abstract class.
+
+```java
+abstract class Account
+```
+
+This is exactly what I'd expect.
+
+---
+
+## 2. Runtime Polymorphism ✔
+
+Very good.
+
+```java
+Account acc1 = new CurrentAccount(...);
+Account acc2 = new SavingsAccount(...);
+Account acc3 = new FixedDepositAccount(...);
+```
+
+This is true runtime polymorphism.
+
+---
+
+## 3. Method Overriding ✔
+
+Every account has its own implementation.
+
+```java
+deposit()
+
+withdraw()
+
+displayBalance()
+```
+
+Excellent.
+
+---
+
+## 4. Encapsulation ✔
+
+Using private variables with getters/setters is correct.
+
+```java
+private String accountNo;
+private double balance;
+```
+
+---
+
+## 5. Constructor Usage ✔
+
+You initialize the account through constructors.
+
+Good.
+
+---
+
+# What an interviewer will ask next
+
+The first question I'd ask is:
+
+> Why did you create `AccountDTO`?
+
+This is the biggest design issue.
+
+---
+
+# Issue 1 — Wrong Place for Common Data ⭐⭐⭐⭐⭐
+
+Currently,
+
+```java
+CurrentAccount
+       |
+AccountDTO
+```
+
+and
+
+```java
+SavingsAccount
+       |
+AccountDTO
+```
+
+Every account owns an `AccountDTO`.
+
+That means
+
+```java
+CurrentAccount
+{
+   AccountDTO acc1;
+}
+```
+
+Instead, the `Account` class itself should contain the common fields.
+
+Like this:
+
+```java
+abstract class Account {
+
+    protected String accountNo;
+    protected String customerName;
+    protected double balance;
+
+}
+```
+
+Then
+
+```java
+class SavingsAccount extends Account
+```
+
+already has
+
+```
+accountNo
+
+customerName
+
+balance
+```
+
+No DTO required.
+
+This is much cleaner OO design.
+
+---
+
+# Issue 2 — Missed `super` Usage ⭐⭐⭐⭐
+
+The requirements mentioned using `super`.
+
+You only have
+
+```java
+super.displayBalance();
+```
+
+inside the FD constructor.
+
+That line shouldn't be there.
+
+It prints
+
+```
+No Valid Account to show Balance
+```
+
+during object creation.
+
+That isn't meaningful.
+
+Instead,
+
+```java
+abstract class Account {
+
+    Account(String accNo,String name,double bal){
+
+    }
+}
+```
+
+Then
+
+```java
+SavingsAccount(...)
+{
+    super(accNo,name,bal);
+}
+```
+
+This is what interviewers expect.
+
+---
+
+# Issue 3 — DTO Naming ⭐⭐⭐⭐
+
+`AccountDTO`
+
+is misleading.
+
+DTO usually means
+
+```
+Database
+
+REST API
+
+Network
+
+Request/Response
+```
+
+It shouldn't represent your domain object.
+
+Better names:
+
+```
+AccountInfo
+
+AccountDetails
+
+or simply remove it.
+```
+
+---
+
+# Issue 4 — Variable Names ⭐⭐⭐⭐
+
+Instead of
+
+```java
+AccountDTO acc1
+```
+
+use
+
+```java
+private AccountDTO account;
+```
+
+or
+
+```java
+private AccountDetails details;
+```
+
+Names should describe purpose, not numbering.
+
+---
+
+# Issue 5 — Access Modifier ⭐⭐⭐
+
+Your methods are package-private.
+
+```java
+void deposit()
+```
+
+Better
+
+```java
+public void deposit()
+```
+
+Especially for interview code.
+
+---
+
+# Issue 6 — Exception Type ⭐⭐⭐⭐
+
+Instead of
+
+```java
+throw new RuntimeException(...)
+```
+
+Better
+
+```java
+throw new IllegalArgumentException(...)
+```
+
+or
+
+```java
+throw new IllegalStateException(...)
+```
+
+or define
+
+```java
+InsufficientBalanceException
+```
+
+A banking application generally uses domain-specific exceptions.
+
+---
+
+# Issue 7 — FD Deposit Logic ⭐⭐⭐⭐
+
+Requirement said
+
+> Deposit only once during account creation.
+
+You correctly prevented later deposits.
+
+```java
+deposit()
+{
+   throw...
+}
+```
+
+Good.
+
+---
+
+# Issue 8 — Small Bug ⭐⭐⭐⭐
+
+Current Account
+
+```java
+if(newBal <= -10000)
+```
+
+Suppose
+
+Current balance
+
+```
+5000
+```
+
+Withdraw
+
+```
+15000
+```
+
+Remaining
+
+```
+-10000
+```
+
+Should this be allowed?
+
+Requirement says
+
+> Allows overdraft of ₹10,000.
+
+Meaning
+
+```
+-10000
+```
+
+should still be valid.
+
+So condition should be
+
+```java
+if(newBal < -10000)
+```
+
+not
+
+```java
+<=
+```
+
+Nice interview catch.
+
+---
+
+# Issue 9 — `displayBalance()`
+
+Current
+
+```java
+ACC1 Balance : 12000
+```
+
+Better
+
+```
+Account Number
+
+Customer
+
+Balance
+
+Account Type
+```
+
+Example
+
+```
+Savings Account
+
+Customer : John
+
+Balance : 12000
+```
+
+---
+
+# Issue 10 — Duplicate Code ⭐⭐⭐⭐⭐
+
+Every class repeats
+
+```java
+displayBalance()
+
+deposit()
+
+constructor
+```
+
+because every class owns
+
+```java
+AccountDTO
+```
+
+If common fields were in `Account`, much of this duplication would disappear.
+
+---
+
+# OO Design (What a senior developer would write)
+
+```
+                 Account (abstract)
+          -----------------------------
+          accountNo
+          customerName
+          balance
+          -----------------------------
+          deposit()
+          withdraw()
+          displayBalance()
+                  ▲
+        -------------------------
+        |           |          |
+ Savings     Current      FixedDeposit
+```
+
+No DTO.
+
+No duplicate fields.
+
+Use
+
+```java
+super(...)
+```
+
+This is a more idiomatic object-oriented design.
+
+---
+
+# If I were the interviewer...
+
+I would ask these follow-up questions:
+
+1. Why abstract class instead of interface?
+2. Why did you create `AccountDTO`?
+3. Why not store common fields in `Account`?
+4. Why use `RuntimeException`?
+5. Can `displayBalance()` be implemented once in the parent?
+6. How would you add a `LoanAccount` without modifying existing code?
+7. Where is the `super` constructor call?
+8. Can this design follow the Open/Closed Principle?
+
+---
+
+## Final Verdict
+
+For a **3-year Java developer**, this is a solid first attempt. You demonstrated the required OOP concepts and your solution is understandable. The main area to improve is **object-oriented modelling**—placing shared state and behavior in the base class, using inheritance more effectively, and avoiding a separate DTO for domain state.
+
+**Final score: 7.8/10**
+
+If you revise the design by:
+
+* moving common fields into `Account`,
+* using a parent constructor with `super(...)`,
+* removing `AccountDTO`,
+* and eliminating duplicated code,
+
+the same solution would be around **9.5/10**, which is the level expected in many product-based company interviews.

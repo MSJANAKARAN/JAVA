@@ -1,0 +1,12 @@
+Hello Java
+Welcome to Files.readString()
+
+Highest Priority Features
+-   Java 5: Generics, Annotations, Enum
+-   Java 7: Try-with-Resources, NIO.2
+-   Java 8: Lambda, Streams, Optional, Date/Time API
+-   Java 9: Modules, JShell
+-   Java 10: var
+-   Java 11: HttpClient, String/File APIs
+-   Java 14–17: Switch Expressions, Text Blocks, Records, Pattern Matching, Sealed Classes
+-   Java 21: Virtual Threads, Pattern Matching for switch, Record Patterns

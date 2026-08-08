@@ -1,0 +1,76 @@
+Scenario 1 (Easy → Medium)
+Banking System - Account Management
+
+A bank wants to manage different types of accounts.
+
+There are three account types:
+
+Savings Account
+Current Account
+Fixed Deposit Account
+
+Every account has:
+
+Account Number
+Customer Name
+Balance
+
+Every account should support
+
+deposit()
+withdraw()
+displayBalance()
+
+However,
+
+Savings Account
+Minimum balance = ₹1000
+Withdrawal should fail if balance goes below ₹1000.
+Current Account
+No minimum balance.
+Allows overdraft of ₹10,000.
+
+Example
+
+Balance = ₹5,000
+
+Withdraw = ₹12,000
+
+Allowed.
+
+Remaining balance = -₹7,000
+
+But withdrawing beyond -₹10,000 should fail.
+
+Fixed Deposit Account
+Deposit only once during account creation.
+Withdrawal is not allowed before maturity.
+
+If withdraw() is called,
+
+Withdrawal not allowed before maturity.
+Additional Requirements
+
+Create a main() method that
+
+Creates one object of each account
+Deposits money where applicable
+Withdraws money
+Displays final balances
+Constraints
+
+Use these OOP concepts:
+
+✔ Encapsulation
+
+✔ Inheritance
+
+✔ Method Overriding
+
+✔ Runtime Polymorphism
+
+✔ Abstract Class or Interface (your choice)
+
+✔ Constructors
+
+✔ super
