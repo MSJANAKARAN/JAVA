@@ -2,7 +2,7 @@ package com.jana.datastructure.queue;
 
 import java.util.Stack;
 
-public class QueueUsingTwoStacks {
+public class QueueUsingTwoStacksImplementation {
 
 //	Enqueue in O(n) and Dequeue() in O(1)
 	static class Queue1 {

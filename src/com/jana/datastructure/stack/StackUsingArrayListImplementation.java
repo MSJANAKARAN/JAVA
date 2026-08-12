@@ -2,7 +2,7 @@ package com.jana.datastructure.stack;
 
 import java.util.ArrayList;
 
-public class StackUsingArrayList {
+public class StackUsingArrayListImplementation {
 
 	ArrayList<Integer> arr = new ArrayList<>();
 
@@ -38,7 +38,7 @@ public class StackUsingArrayList {
 	
 	public static void main(String[] args) {
 
-		StackUsingArrayList st = new StackUsingArrayList();
+		StackUsingArrayListImplementation st = new StackUsingArrayListImplementation();
 
 		st.push(10);
 		st.push(20);

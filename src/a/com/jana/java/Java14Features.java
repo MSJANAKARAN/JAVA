@@ -1,5 +1,9 @@
 package a.com.jana.java;
 
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 public class Java14Features {
 
 	static class Employee {
@@ -141,6 +145,35 @@ public class Java14Features {
 		if (obj instanceof String t) {
 			System.out.println("Java 14: " + t.length());
 		}
+		System.out.println("===Java 12 - Collectors.teeing() ===");
+//		Java 12 introduced Collectors.teeing(), which allows you to split a single stream data flow into 
+//		two separate collectors simultaneously, and then merge their individual results using a user-defined bi-function.
+		double average = Stream.of(10, 20, 30, 40).collect(Collectors.teeing(Collectors.summingDouble(n -> n),
+				Collectors.counting(), (sum, count) -> sum / count));
+//		 Collector 1: Get the sum, Collector 2: Get the total count, Merger: Divide sum by count
+
+		System.out.println("Java 12 teeing: " + average); // Output: 25.0
+
+		System.out.println("===Java 16 - Stream Modernization ===");
+//		Direct .toList() MethodYou no longer need to write .collect(Collectors.toList()). 
+//		You can now call .toList() directly on any object stream pipeline.java
+		// Modern Java 16+ syntax
+		List<String> list = Stream.of("A", "B", "C").toList();
+		System.out.println("Java 16 toList(): " + list);
+//		Key Difference: This returns an unmodifiable list structure that is memory-optimised and 
+//		allows null elements (unlike Java 10's toUnmodifiableList())
+
+//		.mapMulti() Intermediate OperationmapMulti() was added to replace memory-heavy usage of
+//		.flatMap() when replacing stream elements with a small, predictable number of elements.
+//		Why it matters: Instead of allocating a completely new stream object per element like .flatMap() does, 
+//		.mapMulti() uses a stateless Consumer architecture, saving heaps of garbage collection overhead.
+		List<Integer> duplicated = Stream.of(1, 2, 3).<Integer>mapMulti((number, consumer) -> {
+			consumer.accept(number);
+			consumer.accept(number * 10); // Emit a second item downstream instantly
+		}).toList();
+		System.out.println("Java 16 mapMulti(): " + duplicated);
+//		 Result: [1, 10, 2, 20, 3, 30]
+
 	}
 
 }

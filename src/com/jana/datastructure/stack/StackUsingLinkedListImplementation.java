@@ -1,11 +1,11 @@
 package com.jana.datastructure.stack;
 
-public class StackUsingLinkedList {
+public class StackUsingLinkedListImplementation {
 
 	Node top;
 	int count;
 
-	public StackUsingLinkedList() {
+	public StackUsingLinkedListImplementation() {
 		// initial stack is empty
 		top = null;
 		count = 0;
@@ -69,7 +69,7 @@ public class StackUsingLinkedList {
 
 	public static void main(String[] args) {
 
-		StackUsingLinkedList st = new StackUsingLinkedList();
+		StackUsingLinkedListImplementation st = new StackUsingLinkedListImplementation();
 		st.push(10);
 		st.push(39);
 		st.push(40);

@@ -7,6 +7,7 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 
 public class Java11Features {
@@ -144,6 +145,9 @@ public class Java11Features {
 //		Function<String,Integer> f = (var s) -> s.length();
 //		Cannot mix => (var a, b) -> ... ❌ Invalid.
 //		Either all parameters use var or none do.
+		BiConsumer<String, Integer> instant1 = (var a , var b) -> new Java8Features(a,b);
+		System.out.println("Lambda Reference: " );
+		instant1.accept("Jana",25);
 //		==============================================================================
 		
 //		New Collection.toArray()

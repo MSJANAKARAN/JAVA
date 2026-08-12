@@ -2,7 +2,7 @@ package com.jana.datastructure.queue;
 
 import java.util.Stack;
 
-public class QueueUsingStack {
+public class QueueUsingStackImplementation {
 
 //	Enqueue in O(1) and Dequeue() in O(n)
 
@@ -69,7 +69,7 @@ public class QueueUsingStack {
 	public static void main(String[] args) {
 
 //		Enqueue in O(1) and Dequeue() in O(n)
-		QueueUsingStack q = new QueueUsingStack();
+		QueueUsingStackImplementation q = new QueueUsingStackImplementation();
 
 		q.enqueue(10);
 		q.enqueue(20);

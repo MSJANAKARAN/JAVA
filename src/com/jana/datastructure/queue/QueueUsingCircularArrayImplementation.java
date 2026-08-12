@@ -1,6 +1,6 @@
 package com.jana.datastructure.queue;
 
-public class QueueUsingCircularArray {
+public class QueueUsingCircularArrayImplementation {
 	private int[] arr;
 
 	private int capacity;
@@ -9,7 +9,7 @@ public class QueueUsingCircularArray {
 
 	private int front;
 
-	public QueueUsingCircularArray(int cap) {
+	public QueueUsingCircularArrayImplementation(int cap) {
 		arr = new int[cap];
 		capacity = cap;
 		size = 0;
@@ -70,7 +70,7 @@ public class QueueUsingCircularArray {
 	}
 
 	public static void main(String[] args) {
-		QueueUsingCircularArray q = new QueueUsingCircularArray(5);
+		QueueUsingCircularArrayImplementation q = new QueueUsingCircularArrayImplementation(5);
 
 		q.enqueue(10);
 		q.enqueue(20);

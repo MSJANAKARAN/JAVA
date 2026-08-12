@@ -10,7 +10,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class Java910Features {
+public class Java910Features implements CalculatorInterface9, CalculatorInterface8 {
 
 	public static void main(String[] args) {
 
@@ -95,7 +95,7 @@ public class Java910Features {
 
 		System.out.println("===Java 9 - Stream API Improvements===");
 //		Stream API Improvements
-//		takeWhile() - Keeps elements while the condition is true.
+//		takeWhile() - Keeps elements while the condition is true. (Short-Circuiting):
 //		Only use takeWhile() when your data has a guaranteed, meaningful sort order.
 		System.out.println("Take While: ");
 
@@ -104,7 +104,7 @@ public class Java910Features {
 //		filter() evaluates every single element in the stream, 
 //		takeWhile() stops processing completely the moment it encounters the first element that does not match the condition
 
-//		dropWhile() - Skips elements while the condition is true.
+//		dropWhile() - Skips elements while the condition is true. (NOT Short-Circuiting)
 		System.out.println("Drop While: ");
 		List.of(1, 2, 3, 4, 1, 2).stream().dropWhile(n -> n < 4).forEach(System.out::println);
 
@@ -114,6 +114,12 @@ public class Java910Features {
 		System.out.println("Stream.ofNullable: ");
 
 		Stream.ofNullable(null).forEach(System.out::println);
+//		Stream.iterate() method was improved by adding a new overloaded version that accepts a Predicate to act as a termination condition.
+		// Before
+		Stream<Integer> num3 = Stream.iterate(1, n -> n + 1);
+		num3.limit(4).forEach(System.out::println);
+		// Java 9 (The for Loop Equivalent)
+		Stream.iterate(1, n -> n < 5, n -> n + 1).forEach(System.out::println);
 
 		System.out.println("===Java 9 - Optional Improvements===");
 
@@ -154,7 +160,7 @@ public class Java910Features {
 		Optional<String> result = role.isPresent() ? role
 				: (adminRole.isPresent() ? adminRole : Optional.of("Default"));
 		System.out.println(result.get());
-		// Java9
+		// Java 9
 		System.out.println("Java 9: ");
 		Optional<String> result1 = role.or(() -> adminRole);
 		System.out.println(result1.get());
@@ -176,6 +182,34 @@ public class Java910Features {
 //		jshell> msg.toLowerCase()
 //		$5 ==> "hello from jshell"
 
+		System.out.println("===Java 9 - Private Methods===");
+
+//		Private Methods - Java 9
+//		Used to encapsulate repetitive logic shared between multiple default or static methods within the same interface.
+//		They are hidden from implementing classes and outside calls, strictly serving as internal helper methods
+//		non-static (to help default methods) or static (to help static methods)
+//		Check CalculatorInterface.java
+
+//		Default Methods [InterfaceName.super().methodName()]
+		System.out.println("Java 8 interface default: ");
+		CalculatorInterface8 cal1 = new Java910Features();
+		cal1.show();
+		System.out.println("-----------------------------------------");
+		cal1.verify1();
+		System.out.println("-----------------------------------------");
+		System.out.println("Java 9 interface default: ");
+		CalculatorInterface9 cal2 = new Java910Features();
+		cal2.verify();
+		System.out.println("-----------------------------------------");
+		cal2.verify1();
+
+		System.out.println("-----------------------------------------");
+//		Static Methods [InterfaceName.methodName()]
+		System.out.println("Java 8 interface static: ");
+		CalculatorInterface8.check();
+		System.out.println("-----------------------------------------");
+		System.out.println("Java 9 interface static: ");
+		CalculatorInterface9.print();
 		System.out.println("===Java 10 - Local Variable Type Inference (var)===");
 //		Local Variable Type Inference (var)
 //		It allows you to omit the explicit data type declaration for local variables, instructing the compiler to 
@@ -226,15 +260,14 @@ public class Java910Features {
 				.collect(Collectors.toUnmodifiableMap(String::length, str -> str));
 		System.out.println("Java 10 Map: " + umap1);
 
-		
-		Map<Integer, String> umap2 = Stream.of("AA", "BBB","BAB", "C")
-				.collect(Collectors.toUnmodifiableMap(String::length, str -> str,(existing,replacement)-> existing));
+		Map<Integer, String> umap2 = Stream.of("AA", "BBB", "BAB", "C")
+				.collect(Collectors.toUnmodifiableMap(String::length, str -> str, (existing, replacement) -> existing));
 		System.out.println("Java 10 Map: " + umap2);
 //		By default, map collectors crash with an IllegalStateException if two items try to use the exact same key. 
 //		This merge function tells the compiler exactly how to resolve a tie-breaker.
 //		existing: The value already saved in the map ("BBB").
 //		replacement: The new value trying to get in ("BAB").-> existing: Tells Java: "If a duplicate key occurs, ignore the new one and keep the one we already have."
-			
+
 //		Rules and Characteristics
 //		Null Elements Disallowed: 
 //			Unlike standard collectors (Collectors.toList()), unmodifiable collectors throw a NullPointerException 
@@ -245,6 +278,35 @@ public class Java910Features {
 //		Not Immutable (Shallow Immutability): 
 //			The collection wrapper is unmodifiable (you cannot add, remove, or clear items). 
 //			However, if the objects inside the collection are mutable, you can still alter their internal states.
+	}
+
+	@Override
+	public int add(int a, int b) {
+		show();
+		verify();
+		CalculatorInterface8.check();
+		CalculatorInterface8.print();
+		return a + b;
+	}
+
+	@Override
+	public void verify() {
+		System.out.println("Java9 overrided");
+		CalculatorInterface9.super.verify();
+		CalculatorInterface9.print();
+	}
+
+	@Override
+	public void show() {
+		System.out.println("Java8 overrided");
+		CalculatorInterface8.super.show();
+		CalculatorInterface8.print();
+	}
+
+	@Override
+	public void verify1() {
+		System.out.println("verify1 overrided");
+		CalculatorInterface8.check();
 	}
 
 }

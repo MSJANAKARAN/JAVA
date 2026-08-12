@@ -1,13 +1,13 @@
 package com.jana.datastructure.queue;
 
-public class QueueUsingArray {
+public class QueueUsingArrayImplementation {
 	private int[] arr;
 
 	private int capacity;
 
 	private int size;
 
-	public QueueUsingArray(int cap) {
+	public QueueUsingArrayImplementation(int cap) {
 		arr = new int[cap];
 		capacity = cap;
 		size = 0;
@@ -61,7 +61,7 @@ public class QueueUsingArray {
 	}
 
 	public static void main(String[] args) {
-		QueueUsingArray q = new QueueUsingArray(5);
+		QueueUsingArrayImplementation q = new QueueUsingArrayImplementation(5);
 
 		q.enqueue(10);
 		q.enqueue(20);

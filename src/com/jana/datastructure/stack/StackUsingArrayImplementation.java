@@ -1,6 +1,6 @@
 package com.jana.datastructure.stack;
 
-public class StackUsingArray {
+public class StackUsingArrayImplementation {
 
 	private int[] arr;
 
@@ -8,7 +8,7 @@ public class StackUsingArray {
 
 	private int top;
 
-	public StackUsingArray(int cap) {
+	public StackUsingArrayImplementation(int cap) {
 		capacity = cap;
 		arr = new int[capacity];
 		top = -1;
@@ -50,7 +50,7 @@ public class StackUsingArray {
 
 	public static void main(String[] args) {
 
-		StackUsingArray stack = new StackUsingArray(5);
+		StackUsingArrayImplementation stack = new StackUsingArrayImplementation(5);
 
 		stack.push(10);
 		stack.push(30);

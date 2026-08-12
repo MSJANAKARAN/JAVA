@@ -3,7 +3,7 @@ package com.jana.datastructure.stack;
 import java.util.LinkedList;
 import java.util.Queue;
 
-public class StackUsingTwoQueues {
+public class StackUsingTwoQueuesImplementation {
 
 //	Push O(n) Pop(1)
 	public class Stack1 {
@@ -115,7 +115,7 @@ public class StackUsingTwoQueues {
 
 	public static void main(String[] args) {
 
-		StackUsingTwoQueues stack = new StackUsingTwoQueues();
+		StackUsingTwoQueuesImplementation stack = new StackUsingTwoQueuesImplementation();
 		//called public, Push O(n) Pop O(1)
 		Stack1 st=stack.new Stack1();
 		//called static, Push O(1) Pop O(n)

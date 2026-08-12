@@ -14,6 +14,16 @@ public class MainClass {
 	public static void main(String[] args) {
 		System.out.println("Hello World");
 	
+
+//| Feature        | Primitive Type (e.g., `int`)                           | Wrapper Class (e.g., `Integer`)                                             |
+//|:---------------|:-------------------------------------------------------|:----------------------------------------------------------------------------|
+//| Type System    | Not an object (value-based).                           | Fully-fledged Object (extends `Object`).                                    |
+//| Memory Data    | Stored directly on the Stack.                          | Reference on Stack, Object on Heap.                                         |
+//| Can be null?   | No.                                                    | Yes. Can cause `NullPointerException`.                                      |
+//| Generics       | Cannot be used in Collections (No `ArrayList<int>`).   | Works perfectly (Use `ArrayList<Integer>`).                                 |
+//| Mutability     | Value-level replacement(Modifying overwrites raw bits; | Immutable (The internal value is `private final` and cannot change.         |
+//|				   | 	object mutability does not apply).					|     Operations create new objects).										  |
+
 //		Access Modifier   Inside same      Inside same       Subclasses       Everywhere
 //						   class		    package	   (different package)
 //		--------------------------------------------------------------------------------
@@ -25,10 +35,11 @@ public class MainClass {
 //		
 //		public             Yes              Yes                 Yes              Yes    
 		
+		
 	}
 
 
-//	Why one java file splits into multiple classs file?
+//	Why one java file splits into multiple class file?
 //	The compiler generates one .class file for each compiled type (class, interface, enum, record) and additional .class files for anonymous/local classes.
 //	$ - nested or synthetic classes.
 }

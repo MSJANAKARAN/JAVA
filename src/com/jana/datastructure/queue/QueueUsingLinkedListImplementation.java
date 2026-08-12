@@ -1,6 +1,6 @@
 package com.jana.datastructure.queue;
 
-public class QueueUsingLinkedList {
+public class QueueUsingLinkedListImplementation {
 
 	private Node front;
 	private Node rear;
@@ -16,7 +16,7 @@ public class QueueUsingLinkedList {
 		}
 	}
 
-	QueueUsingLinkedList() {
+	QueueUsingLinkedListImplementation() {
 		front = null;
 		rear = null;
 		size = 0;
@@ -79,7 +79,7 @@ public class QueueUsingLinkedList {
 
 	public static void main(String[] args) {
 
-		QueueUsingLinkedList q = new QueueUsingLinkedList();
+		QueueUsingLinkedListImplementation q = new QueueUsingLinkedListImplementation();
 
 		q.enqueue(10);
 		q.enqueue(20);

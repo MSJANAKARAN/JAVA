@@ -3,7 +3,7 @@ package com.jana.datastructure.stack;
 import java.util.LinkedList;
 import java.util.Queue;
 
-public class StackUsingQueue {
+public class StackUsingQueueImplementation {
 
 	Queue<Integer> q = new LinkedList<>();
 	
@@ -49,7 +49,7 @@ public class StackUsingQueue {
 	public static void main(String[] args) {
 		// Push O(n) Pop O(1)
 
-		StackUsingQueue st = new StackUsingQueue();
+		StackUsingQueueImplementation st = new StackUsingQueueImplementation();
 		st.push(10);
 		st.push(39);
 		st.push(40);
