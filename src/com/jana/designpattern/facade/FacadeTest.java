@@ -27,7 +27,7 @@ public class FacadeTest {
 	                new FundTransfer();
 
 	        facade.transferMoney(
-	                "",
+	                "Hana",
 	                "ACC1001",
 	                "ACC2002",
 	                50000,

@@ -9,6 +9,12 @@ public class LoanApplication {
 	private boolean insurance;
 	private String collateral;
 
+	@Override
+	public String toString() {
+		return "LoanApplication [customerName=" + customerName + ", loanAmount=" + loanAmount + ", interestRate="
+				+ interestRate + ", tenure=" + tenure + ", insurance=" + insurance + ", collateral=" + collateral + "]";
+	}
+
 	//private constructor, so that we cannot create object with constructor injection
 	private LoanApplication(Builder builder) {
 		this.customerName = builder.customerName;

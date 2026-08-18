@@ -1,0 +1,102 @@
+Creational — Object Creation
+| Pattern                 | One-Line Meaning                              | Banking Example                                 |
+| ----------------------- | --------------------------------------------- | ----------------------------------------------- |
+|   1. Singleton          | Only   one instance                           | Logger / Configuration Manager                  |
+|   2. Factory Method     | Create object without exposing creation logic | `PaymentFactory` → UPI / NEFT / RTGS            |
+|   3. Abstract Factory   | Create   families of related objects          | Retail Banking UI components / payment families |
+|   4. Builder            | Build complex object   step-by-step           | `LoanApplication.builder()`                     |
+|   5. Prototype          | Create object by   cloning existing object    | Clone a predefined loan/product configuration   |
+
+Structural — Object Composition
+| Pattern           | One-Line Meaning                               | Banking Example                                  |
+| ----------------- | ---------------------------------------------- | ------------------------------------------------ |
+|   6. Adapter      | Make   incompatible interfaces   work together | Bank API ↔ Visa/Mastercard API                   |
+|   7. Bridge       | Separate   abstraction from implementation     | Payment type ↔ Payment provider                  |
+|   8. Composite    | Treat   individual and groups uniformly        | Account → Portfolio → Multiple Investments       |
+|   9. Decorator    |   Add behavior dynamically                     | Savings Account + Cashback + Insurance           |
+|   10. Facade      | Provide   simple interface   to complex system | `TransferFacade` → Debit + Credit + Notification |
+|   11. Flyweight   |   Share common objects   to save memory        | Shared currency / country / branch metadata      |
+|   12. Proxy       |   Control access   to another object           | Security / Caching / Transaction Proxy           |
+
+Behavioral — Object Communication & Behavior
+| Pattern                         | One-Line Meaning                                         | Banking Example                                                |
+| ------------------------------- | -------------------------------------------------------- | -------------------------------------------------------------- |
+|   13. Chain of Responsibility   | Pass request through a   chain of handlers               | Loan Officer → Manager → Regional Manager                      |
+|   14. Command                   | Encapsulate a   request as an object                     | `TransferCommand`, `RefundCommand`                             |
+|   15. Interpreter               | Interpret/evaluate a   language or expression            | Financial rule/expression evaluation                           |
+|   16. Iterator                  | Traverse collection   without exposing internals         | Iterate customer transactions                                  |
+|   17. Mediator                  | Centralize communication between   multiple objects      | Payment workflow coordinator                                   |
+|   18. Memento                   | Capture and restore   previous state                     | Rollback transaction/form state                                |
+|   19. Observer                  | Notify   multiple subscribers   when state changes       | Transaction → SMS + Email + Push + Audit                       |
+|   20. State                     | Behavior changes based on   current state                | Loan: Applied → Approved → Disbursed                           |
+|   21. Strategy                  | Select an   algorithm at runtime                         | UPI vs Card vs NEFT payment                                    |
+|   22. Template Method           | Define workflow skeleton; subclasses customize   steps   | Loan processing with different loan types                      |
+|   23. Visitor                   | Add operations without modifying object structures       | Run different compliance/reporting operations on account types |
+
+
+## 10 Must-Know Design Patterns — Interview Quick Revision 
+
+### 1. Singleton
+
+Type : Creational
+Explanation : Ensures only one instance of a class is created throughout the application and provides a global access point to that instance
+Example : Centralized Logger / Configuration Manager / Cache Manager shared across services.
+
+### 2. Factory
+
+Type : Creational
+Explanation : Provides a way to create objects without exposing the object creation logic to the client. 
+				i.e) Encapsulates object creation and returns the appropriate implementation.
+Example : `PaymentFactory` creates UPI / Card / NEFT / RTGS payment objects.
+
+### 3. Builder
+
+Type : Creational
+Explanation : Used to construct complex objects step by step, especially when an object has many optional fields.
+Example : Build a `LoanApplication` with customer, amount, tenure, insurance, collateral, etc.
+
+### 4. Strategy
+
+Type : Behavioral
+Explanation : Defines a family of different algorithms, encapsulates each one into a separate class, and allows the algorithm to be selected at runtime.
+Example : Different payment strategies for UPI / Card / NEFT / RTGS.
+
+### 5. Adapter
+
+Type : Structural
+Explanation : Allowing two incompatible interfaces to work together by introducing an Adapter 
+				that converts one interface into another expected by the client..
+Example : `VisaAdapter` converts the bank's `pay()` interface to the Visa SDK's `makePayment()`.
+
+### 6. Facade
+
+Type : Structural
+Explanation : provides a single, simplified interface to a set of complex subsystems.
+Example : `TransferFacade` coordinates authentication → balance check → debit → credit → notification → audit.
+
+### 7. Observer
+
+Type : Behavioral
+Explanation : A one-to-many relationship between objects. When one object (called the Subject) changes its state, 
+				it automatically notifies all its dependent objects (called Observers).
+Example : Transaction completion triggers SMS + Email + Push Notification + Audit.
+
+### 8. Proxy
+
+Type : Structural
+Explanation : Controls access to a real object by placing another object (the proxy) in front of it. Instead of client communicating 
+				directly with real object, it communicates through a Proxy, which can perform additional tasks such as security, logging, caching etc...
+Example : Security proxy authenticates and authorizes a customer before accessing `AccountService`.
+
+### 9. Decorator
+
+Type : Structural
+Explanation : Allows you to add new functionality to an object dynamically without modifying its existing code.
+Example : Add Cashback + Insurance + Reward Points to a basic Savings Account.
+
+### 10. Chain of Responsibility
+
+Type : Behavioral
+Explanation : Passes a request through a sequence of handlers until one handles it or the chain stops.
+Example : Loan Officer → Branch Manager → Regional Manager → Head Office approval.
+											

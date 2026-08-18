@@ -30,30 +30,12 @@ public class BuilderTest {
 //	HttpClient, WebClient, RestClient follow builder design pattern
 //	Instead of writing the Builder manually, can also use Lombok @Builder in spring boot, 
 
-	public static class Builder {
-
-		// Mandatory fields
-		private String customerName;
-		private double loanAmount;
-		// Optional fields
-		private double interestRate;
-		private int tenure;
-		private boolean insurance;
-		private String collateral;
-
-		public Builder(String customerName, double loanAmount) {
-			this.customerName = customerName;
-			this.loanAmount = loanAmount;
-		}
-
-	}
-
 	public static void main(String[] args) {
 
 		LoanApplication loan = new LoanApplication.Builder("John", 10000)
 				.interestRate(6.5).collateral("House").insurance(true).build();
 		
-		System.out.println("Loan Created");
+		System.out.println("Loan Created: "+loan.toString());
 
 	}
 

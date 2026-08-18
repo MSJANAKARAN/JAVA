@@ -5,7 +5,7 @@ public class SingletonTest {
 //	Singleton Design Pattern ensures that only one instance of a class is created 
 //	throughout the application and provides a global access point to that instance.
 //	Ensures only one object exists.
-	
+
 //	A banking application has many modules:
 //
 //		Account Service
@@ -14,11 +14,11 @@ public class SingletonTest {
 //		Transaction Service
 //
 //		All need logging. Every service uses the same Logger object.
-	
+
 	public static void main(String[] args) {
-		// TODO Auto-generated method stub
+
 		Logger logger1 = Logger.getInstance();
-		
+
 		Logger logger2 = Logger.getInstance();
 
 		Logger logger3 = Logger.getInstance();
