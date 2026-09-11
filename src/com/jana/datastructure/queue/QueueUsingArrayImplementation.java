@@ -16,6 +16,7 @@ public class QueueUsingArrayImplementation {
 	void enqueue(int val) {
 		if (capacity == size) {
 			System.out.println("Queue is Full");
+			return;
 		}
 		arr[size++] = val;
 	}
@@ -66,6 +67,7 @@ public class QueueUsingArrayImplementation {
 		q.enqueue(10);
 		q.enqueue(20);
 		q.enqueue(30);
+		q.enqueue(40);
 		q.enqueue(40);
 
 		System.out.println("Remove: "+q.dequeue());

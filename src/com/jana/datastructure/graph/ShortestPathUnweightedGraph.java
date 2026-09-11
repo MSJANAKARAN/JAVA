@@ -10,6 +10,7 @@ import java.util.Queue;
 public class ShortestPathUnweightedGraph {
 
 	private static void printShortestDistance(List<List<Integer>> graph, int S, int D, int V) {
+		// Mark the current node as the parent of the neighboring node
 		List<Integer> parent = new ArrayList<>(Collections.nCopies(V, -1));
 
 		// dist[] array stores the distance of nodes from S

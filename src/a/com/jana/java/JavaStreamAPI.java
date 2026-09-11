@@ -4,9 +4,11 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.IntSummaryStatistics;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -45,7 +47,7 @@ public class JavaStreamAPI {
 //			skip()     -Skip first N elements
 //			boxed()    -convert a primitive stream into an object stream
 //			takeWhile()-[Java 9] It checks elements sequentially. When predicate turns false, it shuts down the pipeline. (Short-Circuiting)
-//			takeWhile()-[Java 9] It drops elements while the predicate is true. it cannot discard elements without reading them all, (NOT Short-Circuiting)
+//			dropWhile()-[Java 9] It drops elements while the predicate is true. it cannot discard elements without reading them all, (NOT Short-Circuiting)
 
 //		They are generally lazy.
 //	Terminal Operations
@@ -124,7 +126,7 @@ public class JavaStreamAPI {
 //			IntStream
 //			LongStream
 //			DoubleStream
-		
+
 		System.out.println("\n------ Infinite Stream with generate() ------");
 //		Produces a collection of independent values.
 		Stream.generate(Math::random).limit(4).forEach(System.out::println);
@@ -135,8 +137,21 @@ public class JavaStreamAPI {
 		num3.limit(4).forEach(System.out::println);
 		System.out.println(Stream.generate(() -> "---").limit(30).collect(Collectors.joining()));
 		Stream.iterate(1, n -> n < 5, n -> n + 1).forEach(System.out::println); // Java 9
+		System.out.println("\n------ Stream range vs rangeClosed ------");
 
-		System.out.println("========== Intermediate vs Terminal Operations ==========");
+//		range(startInclusive, endExclusive)Exclusive (Does not include the end value)1, 2, 3, 4
+//		rangeClosed(startInclusive, endInclusive)Inclusive (Includes the end value)1, 2, 3, 4, 5
+		System.out.println(IntStream.range(1, 5).boxed().collect(Collectors.toList()));
+		System.out.println(IntStream.rangeClosed(1, 5).boxed().collect(Collectors.toList()));
+		
+		System.out.println("\n------ Stream String.chars() vs String.codePoints() ------");
+//		String.chars() operates on 16-bit UTF-8/UTF-16 code units, which can break modern characters apart	
+//		String.codePoints() handles full Unicode characters (including emojis and rare symbols)
+		String s = "Hello";
+		s.chars().forEach(c -> System.out.print((char) c)); // Return type IntStream
+		s.codePoints().forEach(c -> System.out.print((char) c)); // Return type IntStream(Handles Emojis)
+
+		System.out.println("\n========== Intermediate vs Terminal Operations ==========");
 		System.out.println("\n------ sorted() ------");
 		List<Integer> list1 = num1.stream().sorted().collect(Collectors.toList());
 		System.out.println(list1);
@@ -214,6 +229,42 @@ public class JavaStreamAPI {
 				.collect(Collectors.groupingBy(Account::getAccountNumber, Collectors.counting()));
 		System.out.println(map4);
 
+		List<Character> input = List.of('A', 'A', 'B', 'B', 'B', 'C', 'C', 'D');
+		Map<Character, Long> result1 = input.stream()
+				.collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
+//		Function.identity() => a->a (Returns a function that always returns its input argument.)
+		Map<Character, Long> result2 = input.stream().collect(Collectors.groupingBy(a -> a, Collectors.counting()));
+		System.out.println(result1);
+		System.out.println(result2);
+		
+		System.out.println("\n------ collect() Map operations ------");
+		Map<Character, Long> result3 = input.stream()
+				.collect(Collectors.toMap(Function.identity(), a -> (long) 1, Long::sum));
+		System.out.println(result3);
+
+//		get the top K characters based on their frequency(result1)
+		Map<Character, Long> res = result1.entrySet().stream()
+				.sorted(Map.Entry.<Character, Long>comparingByValue().reversed()).limit(2)
+				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> a, LinkedHashMap::new));
+//				.collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue(), (a, b) -> a, LinkedHashMap::new)); //without method reference
+
+		System.out.println(res);
+//		map.entrySet().stream()
+//		comparingByValue() - Sort by value ascending
+//		comparingByKey() - Sort by key ascending (similar way)
+
+		result1.entrySet().stream().sorted(Map.Entry.comparingByValue()).forEach(System.out::print);
+//		comparingByValue() - Sort by value descending
+//		comparingByKey() - Sort by key descending (similar way)
+
+		System.out.println();
+		result1.entrySet().stream().sorted(Map.Entry.<Character, Long>comparingByKey().reversed())
+				.forEach(System.out::print);
+		System.out.println();
+		result1.entrySet().stream().sorted(Map.Entry.<Character, Long>comparingByValue().reversed())
+				.forEach(System.out::print);
+//		Map.Entry::getKey - Extract the key
+//		Map.Entry::getValue - Extract the value
 		System.out.println("\n------ collect() Collectors.groupingBy() + summingDouble() ------");
 		Map<String, Integer> map5 = account2.stream()
 				.collect(Collectors.groupingBy(Account::getAccountNumber, Collectors.summingInt(Account::getBalance)));

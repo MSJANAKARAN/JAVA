@@ -26,13 +26,14 @@ public class QueueUsingLinkedListImplementation {
 		Node temp = new Node(val);
 
 		if (front == null) {
-			front = rear=temp;
+			front = rear = temp;
 			size++;
-		}else {
-			rear.next=temp;
-			rear= temp;
+		} else {
+			// Add the new node at the end of the queue and change rear
+			rear.next = temp;
+			rear = temp;
 		}
-		
+
 		size++;
 	}
 
@@ -41,11 +42,11 @@ public class QueueUsingLinkedListImplementation {
 			System.out.println("Queue is empty");
 			return -1;
 		}
-		Node temp= front;
-		int val=temp.data;
-		front=front.next;
-		if(front ==null) {
-			rear=null;
+		Node temp = front;
+		int val = temp.data;
+		front = front.next;
+		if (front == null) {
+			rear = null;
 		}
 		size--;
 		return val;

@@ -10,7 +10,6 @@ public class LinearSearchImplementation {
 		}
 		return -1;
 
-
 //| Attribute             | Complexity     | Notes                                                              |
 //| :-------------------- | :------------- | :----------------------------------------------------------------- |
 //| **Best Case Time**    | O(1)           | Target sits perfectly at the very first element of the collection. |

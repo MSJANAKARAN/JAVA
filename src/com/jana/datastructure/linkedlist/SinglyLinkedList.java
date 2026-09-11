@@ -4,8 +4,8 @@ public class SinglyLinkedList {
 	// Static Class, global instance created in class during JVM startup
 
 	public static class Node {
-		int data;
-		Node next;
+		public int data;
+		public Node next;
 
 		public Node(int d) {
 			this.data = d;
@@ -94,9 +94,7 @@ public class SinglyLinkedList {
 		int index = 1;
 		// As Singly Linked List one directional, go to prev node of position specified
 		while (index++ < pos - 1 && temp != null) {
-
 			temp = temp.next;
-
 		}
 
 		// position higher than length of list, node remains unchanges

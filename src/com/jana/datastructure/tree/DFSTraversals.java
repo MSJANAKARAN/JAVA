@@ -4,34 +4,34 @@ import java.util.ArrayList;
 
 public class DFSTraversals {
 
-	static void inOrder(Node node, ArrayList<Integer> arr) {
+	static void inOrder(TreeNode TreeNode, ArrayList<Integer> arr) {
 
-		if (node == null) {
+		if (TreeNode == null) {
 			return;
 		}
 
-		inOrder(node.left, arr);
-		arr.add(node.data);
-		inOrder(node.right, arr);
+		inOrder(TreeNode.left, arr);
+		arr.add(TreeNode.data);
+		inOrder(TreeNode.right, arr);
 	}
 
-	static void preOrder(Node node, ArrayList<Integer> arr) {
-		if (node == null) {
+	static void preOrder(TreeNode TreeNode, ArrayList<Integer> arr) {
+		if (TreeNode == null) {
 			return;
 		}
 
-		arr.add(node.data);
-		preOrder(node.left, arr);
-		preOrder(node.right, arr);
+		arr.add(TreeNode.data);
+		preOrder(TreeNode.left, arr);
+		preOrder(TreeNode.right, arr);
 	}
 
-	static void postOrder(Node node, ArrayList<Integer> arr) {
-		if (node == null)
+	static void postOrder(TreeNode TreeNode, ArrayList<Integer> arr) {
+		if (TreeNode == null)
 			return;
 
-		postOrder(node.left, arr);
-		postOrder(node.right, arr);
-		arr.add(node.data);
+		postOrder(TreeNode.left, arr);
+		postOrder(TreeNode.right, arr);
+		arr.add(TreeNode.data);
 
 	}
 
@@ -43,12 +43,12 @@ public class DFSTraversals {
 //			2   3
 //		   / \   \
 //		  4   5   6
-		Node root = new Node(1);
-		root.left = new Node(2);
-		root.right = new Node(3);
-		root.left.left = new Node(4);
-		root.left.right = new Node(5);
-		root.right.right = new Node(6);
+		TreeNode root = new TreeNode(1);
+		root.left = new TreeNode(2);
+		root.right = new TreeNode(3);
+		root.left.left = new TreeNode(4);
+		root.left.right = new TreeNode(5);
+		root.right.right = new TreeNode(6);
 
 		ArrayList<Integer> in = new ArrayList<>();
 		ArrayList<Integer> pre = new ArrayList<>();
@@ -56,20 +56,20 @@ public class DFSTraversals {
 
 		inOrder(root, in);
 		System.out.println("InOrder Traversal: ");
-		for (int node : in) {
-			System.out.print(node + " ");
+		for (int TreeNode : in) {
+			System.out.print(TreeNode + " ");
 		}
 
 		preOrder(root, pre);
 		System.out.println("\nPreOrder Traversal: ");
-		for (int node : pre) {
-			System.out.print(node + " ");
+		for (int TreeNode : pre) {
+			System.out.print(TreeNode + " ");
 		}
 
 		postOrder(root, post);
 		System.out.println("\nPostOrder Traversal: ");
-		for (int node : post) {
-			System.out.print(node + " ");
+		for (int TreeNode : post) {
+			System.out.print(TreeNode + " ");
 		}
 
 	}

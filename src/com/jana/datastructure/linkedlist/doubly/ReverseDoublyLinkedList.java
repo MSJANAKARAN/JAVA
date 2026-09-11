@@ -20,7 +20,9 @@ public class ReverseDoublyLinkedList {
 		head.next.next.next.prev = head.next.next;
 
 		list.printList(head);
-		Node reversed = reverseList(head);
+//		Node reversed = reverseList(head);
+		Node reversed = reverseListRecursive(head);
+
 		list.printList(reversed);
 	}
 
@@ -29,18 +31,6 @@ public class ReverseDoublyLinkedList {
 		if (head == null || head.next == null) {
 			return head;
 		}
-
-//		Node current = head;
-//		Node prev=null, next;
-//
-//		while (current != null) {
-//			next = current.next;
-//			prev = current.prev;
-//			current.next= prev;
-//			current.prev = next;
-//						
-//			current=next;
-//		}
 
 		Node current = head;
 		Node temp = null;
@@ -56,7 +46,7 @@ public class ReverseDoublyLinkedList {
 		}
 
 		return temp.prev;
-		
+
 //		Solution with swapping in opposite
 //		Node current = head;
 //        Node newHead = null;
@@ -78,6 +68,28 @@ public class ReverseDoublyLinkedList {
 //
 //        // Return the new front of the list
 //        return newHead;
+	}
+
+	private static Node reverseListRecursive(Node head) {
+
+		if (head == null) {
+			return null;
+		}
+//		swap the next and prev, 
+//		both swapping will work for recursive DLL , becoz recursive pointer is holding the "original next" node
+
+//		Node temp = head.next;
+//		head.next = head.prev;
+//		head.prev = temp;
+		Node temp = head.prev;
+		head.prev = head.next;
+		head.next = temp;
+		// If the prev is now null, the list has been fully reversed
+		if (head.prev == null) {
+			return head;
+		}
+		return reverseListRecursive(head.prev);
+
 	}
 
 }

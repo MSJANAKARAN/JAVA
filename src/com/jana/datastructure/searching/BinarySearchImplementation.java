@@ -62,7 +62,7 @@ public class BinarySearchImplementation {
 		if (arr[mid] == x) {
 			return true;
 		} else if (arr[mid] > x) {
-			return isBinarySearchRecursive(arr, x, left, mid);
+			return isBinarySearchRecursive(arr, x, left, mid - 1);
 		}
 
 		return isBinarySearchRecursive(arr, x, mid + 1, right);

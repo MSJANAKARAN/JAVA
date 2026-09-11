@@ -4,8 +4,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
 
 public class JavaStreamAPIAdvanced {
 //	A Stream is a sequence of elements that supports functional-style operations for processing data.
@@ -198,6 +200,20 @@ public class JavaStreamAPIAdvanced {
 //			Prefer:
 		List<Integer> res2 = num1.stream().map(n -> n * 2).collect(Collectors.toList());
 		System.out.println(res2);
+		
+//		Sum of Unique Elements
+//		Finds numbers that appear exactly once (unique elements) and sums them. 
+//		Elements that appear multiple times are completely ignored and excluded from the sum.
+		int [] nums = {1,2,3,2,5,1};
+		int output = Arrays.stream(nums)
+        .boxed()
+        .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()))
+        .entrySet()
+        .stream()
+        .filter(entry -> entry.getValue() == 1)
+        .mapToInt(entry -> entry.getKey())
+        .sum();
+System.out.println(output);
 
 	}
 

@@ -1,0 +1,470 @@
+@SpringBootApplication
+	Combines @Configuration, @EnableAutoConfiguration and @ComponentScan.
+	It marks the main class of a Spring Boot application and enables auto-configuration and component scanning.
+
+@EnableAutoConfiguration
+	Tells Spring Boot to automatically configure beans based on classpath dependencies.
+	It is the heart of Spring Boot’s “convention over configuration” approach.
+	
+@ComponentScan
+	Tells Spring where to look for components, services, repositories, etc.
+	By default it scans the package of the class that declares it and all sub-packages.
+	
+@Configuration
+	Indicates that a class contains Spring bean definitions (methods annotated with @Bean).
+	It is a source of bean definitions for the Spring IoC container.
+	
+@Bean
+	Declares a method that returns an object to be managed as a Spring bean.
+	The method name becomes the bean name by default.
+
+@Component
+	Generic stereotype for any Spring-managed component.
+	Spring will automatically detect and register it when component scanning is enabled.
+
+@Service
+	Specialization of @Component used for service-layer classes.
+	It improves readability and allows for future specialized processing.
+
+@Repository
+	Specialization of @Component for Data Access Object(DAO) / persistence layer classes.
+	It also enables automatic translation of persistence exceptions.
+
+@Controller
+	Specialization of @Component.
+	Marks a class as a Spring MVC controller that can handle web requests.
+	Methods usually return view names or are used with @ResponseBody.
+
+@RestController
+	Combination of @Controller + @ResponseBody.
+	All methods return data directly (JSON/XML) instead of a view name.
+
+====================================== DEPENDENCY INJECTON ======================================
+
+@Autowired
+	Injects a bean by type into a field, constructor or setter.
+	Spring resolves the dependency automatically from the application context.
+
+@Qualifier
+	Used with @Autowired when multiple beans of the same type exist.
+	It specifies which exact bean should be injected by name.
+	It is used to resolve bean ambiguity by specifying which bean should be injected 
+		when multiple implementations of the same interface exists
+
+@Primary
+	Marks a bean as the preferred one when multiple candidates of the same type exist.
+	Spring will choose the @Primary bean by default.
+
+====================================== CONFIGURATION AND CONDITIONAL ======================================
+
+@Value
+	Injects values from properties files, environment variables
+	Commonly used for configuration values: @Value("${app.name}").
+
+@PropertySource
+	Loads additional properties files into the Spring Environment.
+	Useful when you need custom property files beyond application.properties.
+
+@ConfigurationProperties
+	Binds a group of related properties from application.properties/yml to a Java object.
+	Preferred over many individual @Value annotations for type-safe configuration
+
+@Profile
+	Restricts a bean or configuration to specific Spring profiles (e.g., dev, prod).
+	Activated via spring.profiles.active.
+
+@Conditional
+	The base annotation. It uses a custom Java class that returns true or false.
+
+@ConditionalOnProperty
+	Creates a bean only if a specific property has a certain value.
+	Widely used in Spring Boot auto-configuration.
+
+@ConditionalOnClass / @ConditionalOnMissingClass
+	Creates a bean only if a particular class is (or is not) present on the classpath.
+	Core mechanism of Spring Boot auto-configuration.
+
+@ConditionalOnBean / @ConditionalOnMissingBean
+	Creates a bean only if another bean is (or is not) already present.
+	Prevents duplicate bean definitions.
+
+@ConditionalOnWebApplication
+	Loads a bean only when the app runs as a web application.
+
+====================================== WEB / REST ======================================
+
+@RequestMapping
+	Maps HTTP requests to handler methods or classes.
+	Can specify path, method, headers, consumes, produces, etc.
+	@GetMapping / @PostMapping / @PutMapping / @DeleteMapping / @PatchMapping
+		Shortcut annotations for @RequestMapping with specific HTTP methods.
+		They improve readability and reduce boilerplate.
+
+@PathVariable
+	Binds a URI template variable to a method parameter.
+	Example: /users/{id} → @PathVariable Long id.
+
+@RequestParam
+	Binds a request parameter (query string or form data) to a method parameter.
+	Supports required/optional and default values.
+
+@RequestBody
+	Binds the HTTP request body (usually JSON) to a Java object.
+	Requires a suitable HttpMessageConverter (Jackson is default).
+
+@RequestHeader
+	Access HTTP headers.
+	
+@ResponseBody
+	Indicates that the return value should be written directly to the HTTP response body.
+	Used when you don’t want a view to be resolved.
+
+@ResponseStatus
+	Sets the HTTP status code for a method or exception.
+	Example: @ResponseStatus(HttpStatus.CREATED).
+
+@ExceptionHandler
+	Defines a method that handles specific exceptions thrown by controller methods.
+	Usually placed in a @Controller or @ControllerAdvice class.
+
+@ControllerAdvice / @RestControllerAdvice
+	Provides global exception handling, data binding and model attributes for controllers.
+	@RestControllerAdvice is the REST equivalent (adds @ResponseBody).
+
+@CrossOrigin
+	Enables Cross-Origin Resource Sharing (CORS) for a controller or method.
+	Useful when front-end and back-end run on different origins.
+
+@CookieValue
+	Binds the value of an HTTP cookie to a method parameter in a controller.
+	Example: @CookieValue("JSESSIONID") String sessionId – useful for reading authentication or tracking cookies.
+
+@ModelAttribute
+	Used to bind web request parameters (form fields, query parameters) to a Java object, or to expose data to a web view. 
+	It bridges the gap between user input and your application's data model.
+
+@SessionAttribute
+	Accesses a specific attribute already stored in the HTTP session.
+	Example: @SessionAttribute("user") User user – does not create the attribute, only reads it.
+
+@SessionAttributes
+	Declares session attributes that should be stored in the HTTP session at the class level.
+	Used with @ModelAttribute to keep form-backing objects across multiple requests.
+
+@RequestAttribute
+	Binds a request attribute (set by filters, interceptors, or earlier handlers) to a method parameter.
+	Different from @RequestParam – it reads attributes, not request parameters.
+
+====================================== VALIDATION ======================================
+
+@NotNull
+	Ensures the value is not null.
+	Does not check for empty strings or empty collections.
+
+@NotEmpty
+	Ensures the value is not null and not empty (works for String, Collection, Map, Array).
+	Empty string "" is considered invalid.
+	
+@NotBlank
+	Ensures a String is not null, not empty, and contains at least one non-whitespace character.
+	Most commonly used for text fields (name, email, etc.).
+
+@Size
+	Restricts the size/length of a String, Collection, Map, or Array.
+	Example: @Size(min = 2, max = 50).
+
+@Min / @Max
+	Sets the minimum or maximum value for numeric types (int, long, BigDecimal, etc.).
+	Example: @Min(18) for age validation.
+
+@Email
+	Validates that the string is a well-formed email address.
+	Uses a standard email regex under the hood.
+
+@Pattern
+	Validates the string against a custom regular expression.
+	Example: @Pattern(regexp = "^[0-9]{10}$") for a 10-digit phone number.
+	
+@Positive / @PositiveOrZero
+	Ensures the number is greater than zero (@Positive) or greater than or equal to zero (@PositiveOrZero).
+	Useful for quantities, prices, etc.
+	
+@Negative / @NegativeOrZero
+	Ensures the number is less than zero or less than or equal to zero.
+
+@Past / @PastOrPresent
+	Validates that a date/time is in the past (@Past) or in the past including now (@PastOrPresent).
+	Works with Date, LocalDate, LocalDateTime, etc.
+
+@Future / @FutureOrPresent
+	Validates that a date/time is in the future or in the future including now.
+	Common for appointment or expiry date fields.
+
+@Digits
+	Controls the maximum number of integer and fraction digits.
+	Example: @Digits(integer = 6, fraction = 2) for monetary values.
+
+@AssertTrue / @AssertFalse
+	Ensures a boolean field is true or false.
+	Often used for “I accept terms & conditions” checkboxes.
+
+@Valid
+	Triggers validation of nested objects (cascading validation).
+	Must be placed on the object you want to validate (usually with @RequestBody or @ModelAttribute)
+
+@Validated
+	Spring’s version of @Valid. Supports validation groups and can be used at class or method level.
+	Preferred in Spring applications when you need group-based validation.
+
+====================================== DATA / JPA ======================================
+
+@Entity
+	Marks a class as a JPA entity that will be mapped to a database table.
+	Required for Hibernate/JPA to manage the class.
+
+@Table
+	Specifies the database table name and other table-level details for an entity.
+	Optional if the table name matches the class name.
+
+@Id
+	Marks a field as the primary key of the entity.
+	Usually combined with @GeneratedValue.
+
+@GeneratedValue
+	Specifies how the primary key value is generated (AUTO, IDENTITY, SEQUENCE, TABLE).
+	Most common is @GeneratedValue(strategy = GenerationType.IDENTITY).
+
+@Column
+	Customizes the mapping of a field to a database column (name, length, nullable, etc.).
+	Useful when column name differs from field name.
+
+@Transactional
+	Declares that a method or class should run inside a database transaction.
+	Spring manages commit/rollback automatically.
+
+@EnableJpaRepositories
+	Enables Spring Data JPA repositories.
+	Usually placed on a configuration class (or auto-enabled by Spring Boot)
+
+@Transient
+	Marks a field that should not be persisted to the database.
+	The field is ignored by JPA during insert/update operations.
+
+@Version
+	Enables optimistic locking by maintaining a version number.
+	JPA automatically increments it and throws an exception on concurrent modification.
+
+@OneToMany
+	Defines a one-to-many relationship (one parent has many children).
+	Usually used with mappedBy on the parent side.
+
+@ManyToOne
+	Defines a many-to-one relationship (many children belong to one parent).
+	This is the owning side in most bidirectional relationships.
+
+@OneToOne
+	Defines a one-to-one relationship between two entities.
+	Can be unidirectional or bidirectional.
+
+@ManyToMany
+	Defines a many-to-many relationship.
+	Requires a join table (usually configured with @JoinTable).
+
+@JoinColumn
+	Specifies the foreign key column for a relationship.
+	Used on the owning side (@ManyToOne or @OneToOne).
+
+@JoinTable
+	Configures the join table for a @ManyToMany or unidirectional @OneToMany relationship.
+	Defines join columns and inverse join columns.
+
+@OrderBy
+	Specifies the ordering of a collection when it is retrieved.
+	Example: @OrderBy("name ASC").
+
+@Query
+	Allows you to write custom JPQL or native SQL queries on repository methods.
+	Example: @Query("SELECT u FROM User u WHERE u.email = ?1").
+
+@Modifying
+	Indicates that a @Query method will modify data (UPDATE/DELETE).
+	Must be used with @Transactional and usually clearAutomatically = true.
+
+@Param
+	Binds a method parameter to a named parameter in a @Query.
+	Example: @Query("... WHERE u.name = :name") → @Param("name") String name.
+
+@EntityGraph
+	Defines which associations should be fetched eagerly for a specific query.
+	Helps solve the N+1 problem by loading related entities in one go.
+
+@NamedQuery / @NamedNativeQuery
+	Defines reusable named queries at the entity level.
+	Can be referenced later in repositories using the query name.
+
+@Procedure
+	Maps a repository method to a database stored procedure.
+	Useful when you need to call existing stored procedures.
+
+@Lock
+	Specifies the lock mode (OPTIMISTIC, PESSIMISTIC_READ, PESSIMISTIC_WRITE, etc.) for a query.
+	Used for concurrency control.
+
+@EnableJpaAuditing
+	Enables JPA auditing in the application (usually on a configuration class).
+	Required to make @CreatedDate, @LastModifiedDate, etc. work.
+
+@CreatedDate
+	Automatically sets the creation timestamp when the entity is first persisted.
+	Works with LocalDateTime, Date, Instant, etc.
+
+@LastModifiedDate
+	Automatically updates the timestamp whenever the entity is modified.
+	Requires @EnableJpaAuditing.
+
+@CreatedBy / @LastModifiedBy
+	Automatically stores the user who created or last modified the entity.
+	Requires an AuditorAware implementation.
+
+@MappedSuperclass
+	Allows a non-entity class to share common mapping information with subclasses.
+	Fields of the superclass are mapped to the tables of the subclasses.
+
+@Embeddable / @Embedded
+	@Embeddable marks a class whose fields can be embedded into an entity.
+	@Embedded places that embeddable object inside an entity.
+
+@Inheritance
+	Defines the inheritance strategy (SINGLE_TABLE, JOINED, TABLE_PER_CLASS).
+	Used when you have entity inheritance hierarchies.
+
+@DiscriminatorColumn
+	Used with SINGLE_TABLE inheritance to distinguish between subclasses.
+	Stores a discriminator value in a special column.
+
+@CreationTimestamp
+	Automatically sets the field to the current timestamp when the entity is first persisted.
+	No extra configuration needed (unlike Spring’s @CreatedDate).Works only with Hibernate.
+
+@UpdateTimestamp
+	Automatically updates the field to the current timestamp whenever the entity is modified.
+	Works only with Hibernate.
+
+@Cache
+	Enables second-level caching for an entity or collection.
+	Example: @Cache(usage = CacheConcurrencyStrategy.READ_WRITE). Works only with Hibernate.
+
+@BatchSize
+	Defines the batch size for lazy loading of collections or entities.
+	Helps reduce the N+1 problem by fetching multiple records in one query. Works only with Hibernate.
+
+@Where
+	Adds a permanent SQL filter condition to an entity or collection.
+	Commonly used for soft-delete: @Where(clause = "is_deleted = false"). Works only with Hibernate.
+
+====================================== TEST ======================================
+
+@SpringBootTest
+	Loads the full Spring application context for integration tests.
+	Can start an embedded server with webEnvironment.
+
+@WebMvcTest
+	Loads only the web layer (controllers, filters, etc.) for focused MVC tests.
+	Faster than full @SpringBootTest.
+
+@DataJpaTest
+	Configures an in-memory database and scans only JPA components for repository tests.
+	Ideal for testing Spring Data repositories.
+
+@MockBean
+	Creates a Mockito mock and adds it to the Spring application context.
+	Replaces the real bean for testing.
+	
+@TestConfiguration
+	Defines additional beans that are only available during tests.
+	Keeps test-specific configuration separate from main code.
+
+====================================== SCHEDULING AND ASYNC ======================================
+
+@EnableScheduling
+	Enables Spring’s scheduled task execution capability.
+	Allows use of @Scheduled methods.
+
+@Scheduled
+	Marks a method to be executed on a schedule (cron, fixed rate/delay).
+	Requires @EnableScheduling.
+
+@EnableAsync
+	Enables asynchronous method execution.
+	Allows methods annotated with @Async to run in a separate thread.
+
+@Async
+	Marks a method to be executed asynchronously.
+	The caller does not wait for the method to complete.
+
+@Cacheable / @CacheEvict / @CachePut
+	Declarative caching annotations.
+	@Cacheable stores results, @CacheEvict removes entries, @CachePut updates the cache.
+
+@EnableCaching
+	Enables Spring’s annotation-driven cache management.
+	Required to make caching annotations work.
+
+====================================== LOMBOK ======================================
+
+@Data
+	Generates getters, setters, toString(), equals(), hashCode(), and a required-args constructor.
+	Most commonly used annotation – equivalent to using @Getter + @Setter + @ToString + @EqualsAndHashCode + @RequiredArgsConstructor.
+
+@Getter / @Setter
+	Generates getter and/or setter methods for fields.
+	Can be applied at class level (all fields) or field level (specific fields only).
+
+@ToString
+	Generates a toString() method that includes all fields by default.
+	You can exclude fields using @ToString.Exclude.
+
+@EqualsAndHashCode
+	Generates equals() and hashCode() methods based on the fields.
+	Use @EqualsAndHashCode.Exclude to ignore specific fields (important for JPA entities).
+
+@NoArgsConstructor
+	Generates a no-argument constructor.
+	Required by JPA/Hibernate and many frameworks (Jackson, etc.).
+
+@AllArgsConstructor
+	Generates a constructor with parameters for all fields.
+	Useful when you want to create fully initialized objects.
+
+@RequiredArgsConstructor
+	Generates a constructor for all final fields and fields marked with @NonNull.
+	Very popular with constructor injection in Spring (@RequiredArgsConstructor + final fields).
+
+@Builder
+	Implements the Builder pattern – allows fluent object creation.
+	Example: User.builder().name("John").age(25).build().
+
+@Slf4j
+	Automatically creates a logger field named log (using SLF4J). Simple Logging Facade for Java
+	Replaces the common boilerplate: private static final Logger log = LoggerFactory.getLogger(...).
+
+@NonNull
+	Adds a null-check on the parameter/field. Throws NullPointerException if null is passed.
+	Works well with @RequiredArgsConstructor for mandatory fields.
+
+@SneakyThrows
+	Allows you to throw checked exceptions without declaring them in the method signature.
+	Use carefully – it bypasses Java’s checked exception rules.
+
+@Cleanup
+	Automatically closes resources (like streams) in a finally block.
+	Less commonly used now because of try-with-resources.
+
+@With
+	Generates withXxx() methods that return a clone of the object with one field changed.
+	Useful for immutable objects (works great with @Value).
+
+
+
+
+

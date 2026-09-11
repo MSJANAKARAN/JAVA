@@ -15,7 +15,7 @@ public class StackUsingArrayImplementation {
 	}
 
 	public void push(int val) {
-		if (top == capacity - 1) {
+		if (top == capacity-1) {
 			System.out.println("Stack Overflow");
 			return;
 		}
@@ -56,6 +56,9 @@ public class StackUsingArrayImplementation {
 		stack.push(30);
 		stack.push(40);
 		stack.push(60);
+		stack.push(40);
+		stack.push(40);
+
 
 		// Remove elements
 		System.out.println("Remove: " + stack.pop());

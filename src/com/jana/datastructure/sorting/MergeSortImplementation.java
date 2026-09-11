@@ -13,8 +13,6 @@ public class MergeSortImplementation {
 		mergeSort(arr, mid + 1, end);
 
 		merge(arr, start, mid, end);
-//		print(arr);
-
 	}
 
 	static void merge(int arr[], int start, int mid, int end) {
@@ -32,20 +30,19 @@ public class MergeSortImplementation {
 		int i = 0;
 		int j = 0;
 		int k = start;
-		while (R.length > j && L.length > i) {
+		while (i < L.length && j < R.length) {
 			if (L[i] <= R[j]) {
 				arr[k++] = L[i++];
 			} else {
 				arr[k++] = R[j++];
 			}
 		}
-		while (L.length > i) {
+		while (i < L.length) {
 			arr[k++] = L[i++];
 		}
-		while (R.length > j) {
+		while (j < R.length) {
 			arr[k++] = R[j++];
 		}
-		
 	}
 
 	static void print(int[] arr) {
@@ -75,7 +72,7 @@ public class MergeSortImplementation {
 //	Objects (String, Integer, custom objects): Arrays.sort() uses Timsort (an adaptive, hybrid variant of Merge Sort and Insertion Sort).
 //	Collections (Collections.sort()): Since collections in Java can only hold objects, 
 //		Collections.sort() delegates internally to Arrays.sort(Object[]), naturally utilizing Timsort (Merge Sort).
-	
+
 //| Attribute             | Complexity     | Notes                                                              |
 //| :-------------------- | :------------- | :----------------------------------------------------------------- |
 //| **Best Case Time**    | O(n log n)     | Equal overhead even if the collection is already sorted.           |

@@ -27,7 +27,7 @@ public class StackUsingTwoQueuesImplementation {
 			q1=q2;
 			q2=temp;
 		}
-		
+
 		int pop() {
 			if(q1.size()==0) {
 				System.out.println("Stack is Empty");

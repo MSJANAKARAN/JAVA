@@ -56,11 +56,12 @@ public class QueueUsingTwoStacksImplementation {
 		void enqueue(int val) {
 			s1.push(val);
 		}
+
 //		if s2 is not empty then top of s2 needs to be returned. 
 //		Otherwise all elements are transferred from s1 to s2, 
 //		and the element at the top of s2 is returned.
 		int dequeue() {
-			if (s1.size() == 0 && s2.size()==0) {
+			if (s1.size() == 0 && s2.size() == 0) {
 				System.out.println("Queue is empty");
 				return -1;
 			}
@@ -96,7 +97,7 @@ public class QueueUsingTwoStacksImplementation {
 		}
 
 		int size() {
-			return s1.size()+s2.size();
+			return s1.size() + s2.size();
 		}
 	}
 
