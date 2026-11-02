@@ -47,7 +47,8 @@ public class JavaStreamAPI {
 //			skip()     -Skip first N elements
 //			boxed()    -convert a primitive stream into an object stream
 //			takeWhile()-[Java 9] It checks elements sequentially. When predicate turns false, it shuts down the pipeline. (Short-Circuiting)
-//			dropWhile()-[Java 9] It drops elements while the predicate is true. it cannot discard elements without reading them all, (NOT Short-Circuiting)
+//			dropWhile()-[Java 9] It drops elements while the predicate is true. is a short-circuiting operation for unordered streams(like List), 
+//						while for unordered stream (like Set)it cannot discard elements without reading them all (NOT Short-Circuiting)
 
 //		They are generally lazy.
 //	Terminal Operations
@@ -143,7 +144,7 @@ public class JavaStreamAPI {
 //		rangeClosed(startInclusive, endInclusive)Inclusive (Includes the end value)1, 2, 3, 4, 5
 		System.out.println(IntStream.range(1, 5).boxed().collect(Collectors.toList()));
 		System.out.println(IntStream.rangeClosed(1, 5).boxed().collect(Collectors.toList()));
-		
+
 		System.out.println("\n------ Stream String.chars() vs String.codePoints() ------");
 //		String.chars() operates on 16-bit UTF-8/UTF-16 code units, which can break modern characters apart	
 //		String.codePoints() handles full Unicode characters (including emojis and rare symbols)
@@ -236,7 +237,7 @@ public class JavaStreamAPI {
 		Map<Character, Long> result2 = input.stream().collect(Collectors.groupingBy(a -> a, Collectors.counting()));
 		System.out.println(result1);
 		System.out.println(result2);
-		
+
 		System.out.println("\n------ collect() Map operations ------");
 		Map<Character, Long> result3 = input.stream()
 				.collect(Collectors.toMap(Function.identity(), a -> (long) 1, Long::sum));
@@ -322,6 +323,14 @@ public class JavaStreamAPI {
 				Collectors.counting(), (sum, count) -> sum / count));
 //		 Collector 1: Get the sum, Collector 2: Get the total count, Merger: Divide sum by count
 		System.out.println(average2);
+
+//		In Java, orElse() is not a method of the Stream interface itself. Instead, it belongs to the java.util.Optional class.
+//		Its relationship with Java Streams comes from the fact that several terminal stream operations return an Optional container 
+//		(such as findFirst(), findAny(), max(), min(), and reduce()). 
+//		You chain .orElse() immediately after these terminal operations to unwrap the value and safely provide a 
+//		fallback default value if the stream ends up being empty
+		System.out.println(names1.stream().filter(name -> name.startsWith("Z")).findFirst().orElse("Unknown"));
+		System.out.println(Arrays.stream(num2).max().orElse(0));
 
 	}
 

@@ -1,0 +1,342 @@
+19. Database
+	Database provides durable storage.
+	
+	Examples:
+		PostgreSQL
+		MySQL
+		Oracle
+		MongoDB
+		DynamoDB
+		
+
+20. SQL vs NoSQL
+	SQL: PostgreSQL, MySQL, Oracle
+	Good when you need:
+		Transactions
+		Relationships
+		Strong consistency
+		Complex queries
+	
+	NoSQL: MongoDB, DynamoDB, Cassandra
+	Useful when you need:
+		Very large scale
+		Flexible schema
+		Specific high-throughput access patterns
+		Distributed storage
+
+21. Latency ⭐⭐⭐⭐⭐
+	Latency = how long one request takes.
+	Example:
+		Request sent
+		     |
+		     |---- 50 ms ----|
+		     ▼
+		Response
+	Latency: 50 ms
+	
+	Common metrics:
+		P50 = 50 ms
+		P95 = 100 ms
+		P99 = 200 ms
+
+22. Why P95/P99?
+	Average can hide slow requests.
+	Suppose:
+		99 requests = 10 ms
+		1 request  = 5 seconds
+	
+	Average doesn't tell the full story.
+	P99 tells you roughly:
+	99% of requests complete within this latency.
+	For production HLD: P50, P95, P99 are more useful than average alone.
+
+23. Throughput ⭐⭐⭐⭐⭐
+	Throughput = how much work the system handles per unit of time.
+	Usually:
+		requests/sec
+		transactions/sec
+		messages/sec
+	
+	Example: 10,000 requests/sec 
+		means the system processes approximately: 10K requests every second
+
+24. Latency vs Throughput
+	Latency = How fast is ONE request?
+	Throughput = How many requests can we process?
+
+25. Availability ⭐⭐⭐⭐⭐
+	Availability means:
+		How often is the system operational and accessible?
+			
+	For example: 99.9%
+		roughly means: 0.1% downtime
+		Higher means less downtime.
+
+26. High Availability
+	Avoid: Client -> Single Server
+	because: Server DOWN -> System DOWN
+	
+	Instead:
+	          Load Balancer
+	         /      |      \
+	        S1     S2      S3
+	
+	If S2 DOWN, the system continues with S1 and S2
+
+27. Reliability
+	Availability and reliability are related but different.
+	Availability => Is the service accessible?
+	
+	Reliability => Does it behave correctly and consistently, including under failures?
+	
+	Example:
+		A payment API that is always reachable but occasionally charges users twice has:
+			High availability
+			Low reliability
+	For financial systems, reliability is extremely important.
+
+28. Reliability Techniques
+	Common techniques:
+		Retry
+		Timeout
+		Circuit Breaker
+		Bulkhead
+		Idempotency
+		Replication
+		Backups
+		Failover
+		Reconciliation
+		Dead Letter Queue
+	
+	Example:
+		Payment Service
+		      ↓
+		Provider timeout
+		      ↓
+		    Retry
+		      ↓
+		Circuit breaker if repeated failure
+
+29. Timeout ⭐⭐⭐
+	Never wait forever for another service.
+	Bad:
+		Service A
+		   ↓
+		Service B
+		   ↓
+		...wait forever...
+	
+	Better:
+		Service A
+		   ↓
+		Service B
+		   ↓
+		5 second timeout
+		   ↓
+		Failure handling
+	
+	Timeout prevents resources from being held indefinitely.
+
+30. Retry
+	For transient failures:
+		Request
+		  ↓
+		Timeout
+		  ↓
+		Retry
+	Don't immediately retry aggressively.
+	
+	Use: Exponential Backoff + Jitter
+	Example:
+		Attempt 1 → immediately
+		Attempt 2 → 100ms
+		Attempt 3 → 200ms
+		Attempt 4 → 400ms
+	Actual values depend on the system.
+
+31. Circuit Breaker
+	Suppose Payment Service calls an unhealthy provider:
+		A → B
+		A → B
+		A → B
+		...
+	Every request fails.
+	
+	Circuit breaker:
+	           CLOSED
+	              |
+	        failures ↑
+	              |
+	              ▼
+	            OPEN
+	              |
+	          wait period
+	              |
+	              ▼
+	          HALF OPEN
+	              |
+	        test request
+	          /       \
+	       success   failure
+	          |         |
+	       CLOSED      OPEN
+	This prevents continuously hitting a failing dependency.
+
+32. Bottleneck ⭐⭐⭐⭐⭐
+	A bottleneck is the component limiting the entire system's performance.
+	Example:
+		API Servers
+		100K req/sec
+		      ↓
+		Database
+		10K req/sec
+	Database is the bottleneck.
+	Increasing API servers won't solve the problem.
+
+33. Finding Bottlenecks
+	Look at:
+		CPU
+		Memory
+		Network
+		Database connections
+		DB CPU
+		DB locks
+		Redis latency
+		Kafka lag
+		Thread pools
+		Disk I/O
+		External API latency
+	
+	In HLD interviews, ask:
+		"What component becomes the bottleneck when traffic increases?"
+		Then design around it.
+
+34. Example: Scaling an Order System
+	Initial:
+	              Server
+	                |
+	                ▼
+	                DB
+		Traffic increases
+	Step 1
+		Horizontal scale app:
+		             Load Balancer
+		             /     |     \
+		            S1    S2     S3
+		             \     |     /
+		                  DB
+		Now DB may become bottleneck.
+	Step 2
+	Add cache:
+	             Load Balancer
+	             /     |     \
+	            S1    S2     S3
+	             \     |     /
+	                Redis
+	                  |
+	                  ▼
+	                  DB      
+	Step 3
+	Database read replicas:
+	                 DB Primary
+	                 /        \
+	                ▼          ▼
+	            Replica 1   Replica 2
+	Writes: → Primary
+	Reads: → Replicas
+	But don't use replicas for data that requires immediate read-after-write 
+	consistency unless the architecture handles replication lag.
+                  
+35. Capacity Thinking ⭐⭐⭐⭐⭐
+
+Suppose: 10 million users and 10% active at peak
+Then: 1 million active users
+Suppose each generates: 1 request / 10 seconds
+Peak request rate: 1,000,000 / 10 = 100,000 requests/sec
+Now ask: Can one server handle 5K req/sec?
+If yes: 100K / 5K = 20 servers
+Then add headroom: ~25–30 servers
+The exact number depends on actual benchmarking.
+
+36. Bottleneck Chain
+	A useful way to think about architecture:
+	Each layer has capacity
+		Client
+		  ↓
+		DNS
+		  ↓
+		LB (1M req/s)
+		  ↓
+		Gateway (500K req/s)
+		  ↓
+		App (100K req/s)
+		  ↓
+		Redis (500K req/s)
+		  ↓
+		DB (20K writes/s)
+	Therefore:
+		Overall write capacity ≈ DB capacity
+
+37. Scalability
+	Scalability means:
+		How well does the system handle increasing workload?
+	Suppose:
+		10K users → 20K users → 100K users → 1M users
+	Can the architecture grow without completely redesigning everything?
+		That's scalability.
+
+38. Vertical + Horizontal Together
+	Real systems often use both.
+	Example:
+	Application
+		→ horizontal scaling
+	Database
+		→ vertical scaling initially
+		→ read replicas
+		→ partitioning/sharding later
+	Redis
+		→ cluster
+	
+39. Sharding
+	When one DB cannot handle the data/workload:
+		Database
+		    ↓
+		Shard 1
+		Shard 2
+		Shard 3
+	
+	Example:
+		userId 1–1M       → Shard 1
+		userId 1M–2M      → Shard 2
+		userId 2M–3M      → Shard 3
+		
+		Or hash-based: hash(userId) % N
+	
+	Sharding improves:
+		Storage capacity
+		Write throughput
+		Read throughput
+	
+	But introduces:
+		Cross-shard queries
+		Rebalancing
+		Operational complexity
+	
+	Don't shard prematurely.
+
+40. Replication
+	Replication means maintaining copies of data.
+	              Primary
+	             /       \
+	            ▼         ▼
+	       Replica 1   Replica 2
+	Benefits:
+		High availability
+		Read scaling
+		Disaster recovery
+	But replicas can have: Replication lag
+	So:
+		WRITE → Primary
+		READ  → Replica
+	may temporarily return stale data.
+

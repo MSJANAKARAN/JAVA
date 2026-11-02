@@ -1,0 +1,211 @@
+Design a stock trading system where users can:
+    View stock prices
+    View market depth
+    Place BUY/SELL orders
+    Modify/cancel orders
+    Track order status
+    View portfolio/holdings
+    View trade history
+    Receive order/trade notifications
+
+        User
+        │
+        │ BUY 10 shares of AAPL @ $200
+        ▼
+        Trading Platform
+        │
+        ▼
+        Order Management System
+        │
+        ▼
+        Risk / Funds Validation
+        │
+        ▼
+        Exchange
+        │
+        ▼
+        Matching Engine
+        │
+        ▼
+        Trade Execution
+        │
+        ├── Portfolio
+        ├── Funds/Ledger
+        └── Notification
+
+The interviewer may ask:
+    "Are you designing a stock exchange or a broker application?"
+
+Clarify:
+    "I'll design the broker-side trading platform and treat the exchange/matching engine as an external 
+    or downstream component. I'll also explain how the matching engine works."    
+
+Functional Requirements
+Customer
+    1. Search stocks
+    2. View current price
+    3. View market depth
+    4. Place BUY order
+    5. Place SELL order
+    6. Modify order
+    7. Cancel order
+    8. View order status
+    9. View holdings
+    10. View trade history
+Order types
+    At minimum:
+        MARKET
+        LIMIT
+
+Optionally:
+        STOP
+        STOP_LIMIT
+        IOC
+        DAY
+        GTC
+
+Non-Functional Requirements:
+    | Requirement     | Importance |
+    | --------------- | ---------: |
+    | Low latency     |      ⭐⭐⭐⭐⭐ |
+    | High throughput |      ⭐⭐⭐⭐⭐ |
+    | Availability    |      ⭐⭐⭐⭐⭐ |
+    | Consistency     |      ⭐⭐⭐⭐⭐ |
+    | Durability      |      ⭐⭐⭐⭐⭐ |
+    | Ordering        |      ⭐⭐⭐⭐⭐ |
+    | Auditability    |      ⭐⭐⭐⭐⭐ |
+    | Fault tolerance |      ⭐⭐⭐⭐⭐ |
+Trading systems prioritize correctness, ordering and latency simultaneously.
+
+Architecture:
+                             CLIENT
+                                |
+                                ▼
+                         Load Balancer
+                                |
+                                ▼
+                          API Gateway
+                                |
+                    ┌───────────┴───────────┐
+                    │                       │
+                    ▼                       ▼
+                Order API             Market Data API
+                    │                       │
+                    ▼                       ▼
+                   OMS                 Market Data
+                    │                       │
+          ┌─────────┼─────────┐             ▼
+          │         │         │          Redis
+          ▼         ▼         ▼             │
+       Risk      Funds      Account          ▼
+       Engine    Service                 WebSocket
+          │
+          ▼
+       Order Router
+          │
+          ▼
+    Exchange Adapter
+          │
+          ▼
+       Exchange
+          │
+          ▼
+    Matching Engine
+          │
+          ▼
+       Trade Events
+          │
+          ▼
+        Kafka
+     ┌────┼───────────────┬────────────┐
+     ▼    ▼               ▼            ▼
+  Ledger Portfolio     Settlement  Notification
+     │       │
+     ▼       ▼
+   Audit   Holdings
+
+Design Pattern:
+| Pattern             | Usage                            |
+| ------------------- | -------------------------------- |
+| State Machine       | Order lifecycle                  |
+| Strategy            | Order/routing strategies         |
+| Adapter             | Exchange integrations            |
+| Outbox              | Reliable events                  |
+| Saga                | Multi-service workflows          |
+| Idempotent Consumer | Duplicate events                 |
+| Event-driven        | Trade/order events               |
+| CQRS                | Read/write separation            |
+| Circuit Breaker     | External systems                 |
+| Retry               | Temporary failures               |
+| Bulkhead            | Isolate dependencies             |
+| Factory             | Exchange/order provider creation |
+
+Interview Explanation:
+I would design a broker-side stock trading platform where users can view market data, 
+place BUY and SELL orders, cancel or modify orders, and track executions and portfolio positions. 
+I would treat the exchange and matching engine as downstream components.
+
+The main services would be API Gateway, Order Management Service, Risk Service, 
+Funds or Ledger Service, Order Router, Exchange Adapter, Market Data Service, 
+Portfolio Service, Settlement Service and Notification Service.
+
+When a user places an order, for example BUY 100 shares of AAPL at a limit price of $200, 
+the request first goes through authentication, authorization and rate limiting. 
+The Order Management Service validates the instrument, quantity, order type and market state. 
+The Risk and Funds services verify that the user has sufficient buying power and reserve the 
+required funds using an atomic database operation or optimistic locking to prevent concurrent 
+orders from spending the same balance.
+
+The order is then persisted with a unique client order ID. This is important because network retries 
+must not create duplicate orders. If the same client order ID is received again, 
+the system returns the existing order rather than creating another one.
+
+The validated order is sent through an Order Router and Exchange Adapter to the appropriate exchange. 
+The exchange's matching engine maintains an order book containing bids and asks. 
+A common matching rule is price-time priority: the highest BUY price has priority, 
+the lowest SELL price has priority, and orders at the same price are processed FIFO.
+
+For example, if a user places a BUY order for 100 shares but only 40 shares are available from matching SELL orders, 
+the order becomes PARTIALLY_FILLED. I would maintain ordered quantity, executed quantity and 
+remaining quantity separately. When the remaining 60 shares are matched later, the order becomes FILLED.
+
+The matching engine is latency-sensitive, so I would keep the active order book in memory and partition
+processing by instrument. Each symbol should have a single logical ordered processing stream so that concurrent
+requests cannot produce nondeterministic matching. An ordered event log can be used for recovery and replay.
+
+After execution, the matching engine generates a TradeExecuted event containing a unique trade ID, 
+order IDs, symbol, quantity, execution price and timestamp. Downstream services consume this event 
+to update the portfolio, ledger, settlement state and notifications.
+
+For financial correctness, I would use an immutable ledger rather than simply overwriting account balances. 
+Trade processing and portfolio updates would be idempotent using the unique trade ID, because event systems 
+can deliver duplicate messages.
+
+For asynchronous communication, I would use Kafka for trade and order events. 
+I would use the Transactional Outbox pattern for database changes that must reliably produce events. 
+I would not claim that Kafka alone provides exactly-once business processing; 
+instead, I would use idempotency and unique business identifiers.
+
+Failure handling is especially important. If an exchange request times out, 
+I would not immediately mark the order as failed because the exchange may have accepted it. 
+I would mark it as pending or unknown and query the exchange using the client order ID before retrying. 
+Similarly, cancellation is asynchronous: an order may be filled before the cancellation reaches the exchange, 
+so the final state must come from the authoritative execution result.
+
+For live market prices, I would use a market-data feed, Redis for frequently accessed current data, 
+and WebSockets to push price updates to clients instead of continuous polling. Historical prices can be stored 
+separately in time-series optimized storage.
+
+The system would be horizontally scalable at the API and service layers. Kafka partitions and symbol-based 
+processing can distribute workloads, while hot instruments can receive dedicated resources. 
+However, a single instrument's matching process must maintain a well-defined serialization point.
+
+Finally, I would monitor order latency, rejection rate, exchange latency, fill rate, Kafka lag, 
+matching-engine health, portfolio inconsistencies and reconciliation failures. 
+Periodic reconciliation between our OMS, exchange, ledger and settlement systems is essential 
+because external systems and networks can fail.
+
+The core principle is:
+    Keep the order and financial state strongly consistent, process each instrument in deterministic order, 
+    use idempotency for retries and duplicate events, and separate the ultra-low-latency matching path 
+    from asynchronous downstream processing.

@@ -1,0 +1,368 @@
+		                TRAFFIC
+		                   ↓
+		              Load Balancer
+		                   ↓
+		            Stateless Services
+		                   ↓
+		        ┌──────────┴──────────┐
+		        ↓                     ↓
+		      CACHE                DATABASE
+		        ↓                     ↓
+		   Lower latency         Durability
+		   Lower DB load         Consistency
+		        │                     │
+		        └──────────┬──────────┘
+		                   ↓
+		              SCALABILITY
+		                   ↓
+		       Horizontal scaling
+		       Replication
+		       Partitioning
+		                   ↓
+		              RELIABILITY
+		                   ↓
+		       Timeout / Retry
+		       Circuit Breaker
+		       Idempotency
+		       
+| Concept                | Interview Definition                                      |
+| ---------------------- | --------------------------------------------------------- |
+|   Latency              | Time taken to process one request                         |
+|   Throughput           | Amount of work processed per unit time                    |
+|   Availability         | Probability/system percentage that service is operational |
+|   Reliability          | Ability to perform correctly despite failures             |
+|   Scalability          | Ability to handle increasing workload                     |
+|   Bottleneck           | Component limiting overall system capacity                |
+|   Horizontal scaling   | Adding more instances                                     |
+|   Vertical scaling     | Increasing resources of one instance                      |
+|   Cache                | Fast temporary storage for frequently accessed data       |
+|   Replication          | Maintaining multiple copies of data                       |
+|   Sharding             | Splitting data across multiple nodes                      |
+|   Load Balancer        | Distributes traffic across servers                        |
+|   API Gateway          | Central API entry point for routing and policies          |
+
+Q1. How much traffic?
+   Throughput
+
+Q2. How fast should it respond?
+   Latency
+
+Q3. What happens if a server dies?
+   Availability
+
+Q4. What happens if a dependency fails?
+   Reliability
+
+Q5. What happens when traffic grows 10×?
+   Scalability
+
+Q6. Which component limits capacity?
+   Bottleneck
+
+Q7. Can we add more instances?
+   Horizontal scaling
+
+Q8. Can we make one machine bigger?
+   Vertical scaling
+Q9. What is Fault tolerance?
+	  Fault tolerance is the ability of a distributed system to continue operating properly and reliably 
+	  in the event of the failure of one or more of its components (such as hardware crashes, network drops, or software bugs).
+	  A fault-tolerant system does not necessarily prevent errors from happening; 
+	  instead, it is designed to absorb the impact of a failure so that end-users experience zero downtime or data loss.
+	  
+                    1M req/sec
+                         |
+                         ▼
+                  Where is bottleneck?
+                         |
+          ┌──────────────┼──────────────┐
+          ▼              ▼              ▼
+       Network           App            DB
+          |              |              |
+          ▼              ▼              ▼
+         LB          Horizontal      Cache /
+                     scaling         Replicas
+
+1. The Basic HLD Request Flow
+		Client
+		   ↓
+		DNS
+		   ↓
+		Load Balancer
+		   ↓
+		API Gateway
+		   ↓
+		Application Service
+		   ↓
+		Cache
+		   ↓
+		Database
+		
+Not every system requires every component. For example, a small application may simply be:
+		Client → Backend → Database
+
+2. Client
+	The client is where the request originates.
+	Example: GET /api/orders/1001
+	The client doesn't normally know which application server will handle the request.
+	It only knows something like: api.myapp.com
+	
+3. DNS — Domain Name System
+	DNS converts a domain name into an IP address.
+	api.myapp.com → DNS → 203.0.113.10
+	Without DNS, users would need to remember: 203.0.113.10
+	
+	DNS is not a load balancer.
+	DNS can direct clients toward an endpoint, while the load balancer distributes requests among servers.
+	
+4. Load Balancer ⭐
+	 1000 requests
+	      ↓
+	Load Balancer
+	 ┌────┼────┐
+	 ▼    ▼    ▼
+	S1   S2   S3
+	
+	Main purposes
+		Distribute traffic
+		Improve availability
+		Remove unhealthy servers
+		Enable horizontal scaling
+
+5. Load Balancing Algorithms
+	Round Robin
+		Request 1 → S1
+		Request 2 → S2
+		Request 3 → S3
+		Request 4 → S1
+	
+	Simple.
+	
+	Weighted Round Robin
+		S1 → weight 2
+		S2 → weight 1
+	
+	S1 receives roughly twice as much traffic.
+	Useful when servers have different capacities.
+	
+6. Health Checks
+	The load balancer should know whether a server is healthy.
+	
+	For example: GET /actuator/health
+	If: Server1 → DOWN
+	the LB stops routing traffic there.
+	
+	              Load Balancer
+	             /      |      \
+	            ▼       X       ▼
+	           S1      S2      S3
+	                   DOWN
+	This is one reason Spring Boot Actuator is useful in production systems.	
+
+7. API Gateway ⭐⭐⭐
+	The API Gateway is the entry point into backend services.
+	Example:
+				Client
+				   ↓
+				API Gateway
+				   ↓
+		 ┌───────┬────────┬──────────┐
+		 ▼       ▼        ▼          ▼
+		User   Order   Payment    Product
+	
+	It can handle common concerns:
+		Authentication
+		Authorization
+		Rate limiting
+		Routing
+		Request logging
+		CORS
+		TLS termination
+		API versioning
+
+8. API Gateway vs Load Balancer
+	Load Balancer : "Which server?"
+	API Gateway : "Which service/API?"
+	| Load Balancer             | API Gateway                   |
+	| ------------------------- | ----------------------------- |
+	| Distributes traffic       | Routes APIs                   |
+	| Server-level concern      | Application/API-level concern |
+	| Health checks             | Authentication                |
+	| Traffic distribution      | Rate limiting                 |
+	| High availability         | API policies                  |
+	| Works mainly with servers | Understands API routes        |
+
+9. Service
+	The service contains business logic.
+	Architecture:
+		API Gateway
+		     ↓
+		Order Service
+		     ↓
+		Business Logic
+		     ↓
+		Repository
+
+10. Stateless Service ⭐⭐⭐
+	Prefer application servers to be stateless.
+	Bad:
+		User A
+		   ↓
+		Server 1
+		   ↓
+		Session stored only in Server 1
+		
+		If Server 1 dies: Session LOST
+	Better:
+             Load Balancer
+             /     |     \
+            S1    S2     S3
+             \     |     /
+                 Redis
+
+Shared state can be stored in:
+		Redis
+		Database
+		External session store
+
+Then any server can handle the request.
+
+11. Horizontal Scaling ⭐⭐⭐⭐⭐
+	Horizontal scaling means: Add more machines/instances.
+	Before:
+	        Server
+	          |
+	       10K req/s
+	
+	After:
+	       Load Balancer
+	       /     |     \
+	      S1    S2    S3
+	      10K   10K   10K
+	
+	Total capacity ≈ 30K requests/sec assuming the workload scales well.
+
+	Advantages:
+		High availability
+		Better fault tolerance
+		Easy incremental scaling
+	This is the preferred approach for stateless application services.
+
+12. Vertical Scaling
+	Vertical scaling means: Make one machine more powerful.
+	
+	Before:
+		4 CPU
+		8 GB RAM
+	      ↓
+	After:
+		16 CPU
+		64 GB RAM
+	
+	Advantages:
+		Simple
+		No distributed coordination required
+	
+	Disadvantages:
+		Hardware limits
+		Can become expensive
+		Single-server failure remains a concern
+
+13. Horizontal vs Vertical
+		|                    | Horizontal           | Vertical             |
+		| ------------------ | -------------------- | -------------------- |
+		| Method             | Add servers          | Bigger server        |
+		| Scalability        | High                 | Limited              |
+		| Availability       | Better               | Lower                |
+		| Complexity         | Higher               | Lower                |
+		| Cost               | Scales incrementally | Can become expensive |
+		| Typical HLD choice | ⭐⭐⭐⭐⭐          | ⭐⭐                 |
+
+	Interview answer:
+		I prefer horizontal scaling for stateless services because it improves both capacity 
+		and availability, while vertical scaling has hardware and cost limits.
+
+14. Cache ⭐⭐⭐⭐⭐
+	A cache stores frequently accessed data closer to the application.
+	
+	Without cache:
+		Client
+		 ↓
+		Service
+		 ↓
+		Database
+	Every request hits DB.
+	
+	With Redis:
+		Client
+		 ↓
+		Service
+		 ↓
+		Redis
+		 ↓
+	  Database only on cache miss
+
+15. Why Cache?
+	Suppose: 1 million requests and the same product is requested repeatedly.
+	
+	Without cache: 1M → Database
+	
+	With cache: 1M → Redis
+				 |
+				 └── small percentage → Database
+
+16. Cache Hit vs Cache Miss
+	Cache hit -> GET product:P100
+		Redis
+		 ↓
+		Found
+		 ↓
+		Return
+	Very fast.
+	
+	Cache miss -> GET product:P100
+		Redis
+		 ↓
+		Not found
+		 ↓
+		Database
+		 ↓
+		Store in Redis
+		 ↓
+		Return
+	This is called Cache-Aside / Lazy Loading.
+
+17. Cache-Aside
+		Request
+		   ↓
+		Check Redis
+		   |
+		 ┌─┴────────┐
+		Hit        Miss
+		 |           |
+		 ▼           ▼
+		Return      DB
+		             |
+		             ▼
+		           Redis
+		             |
+		             ▼
+		           Return
+This is one of the most important caching patterns for interviews.
+
+18. Cache Invalidation ⭐⭐⭐
+	Cache invalidation is the process of removing or updating outdated data 
+	in a system's cache when the original source of truth changes.
+	
+	Suppose DB says: Price = ₹100
+	Redis: Price = ₹100
+	
+	Update DB: ₹120
+	but Redis still has: ₹100
+	Now users see stale data.
+
+	Possible strategies:
+		TTL(Time to Live): Cache expires after 5 minutes
+		Write-through: Update cache when DB changes.
+		Explicit invalidation: DB update -> Delete Redis key
+		Event-driven invalidation: DB update -> Kafka -> Cache invalidation

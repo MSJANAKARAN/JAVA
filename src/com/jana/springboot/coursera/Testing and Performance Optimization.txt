@@ -1,0 +1,702 @@
+Writing Unit Tests with JUnit
+	JUnit 5 introduces a modular engine that utilizes descriptive annotations and 
+	powerful assertion APIs to validate programmatic expectations.
+	
+	A standard unit test method follows the Arrange, Act, Assert lifecycle layout:
+		@Test // Marks the target Java method as an executable test block
+		void testCalculatorAddition() {
+		    // 1. Arrange (Set up test variables and system objects)
+		    Calculator calc = new Calculator();
+		
+		    // 2. Act (Trigger the specific unit method execution)
+		    int actualResult = calc.add(2, 3);
+		
+		    // 3. Assert (Enforce the architectural baseline checkpoint)
+		    assertEquals(5, actualResult, "The calculator addition method failed!");
+		}
+	
+	org.junit.jupiter.api.Assertions package:
+		assertEquals(expected, actual):
+			Verifies that two target parameters are identically equal.
+			
+		assertTrue(condition):
+			Validates that a boolean expression evaluates to true.
+			
+		assertFalse(condition):
+			Validates that a boolean expression evaluates to false.
+			
+		assertNull(object):
+			Validates that an object reference does not point to memory.
+		
+		assertThrows(Class, Executable):
+			Enforces that an execution context must fail with a specific exception.
+	
+	The Test Execution Lifecycle:
+		JUnit 5 provides lifecycle hooks to handle system isolation and resource cleanup. 
+		These hooks control exactly when background configurations spin up and 
+		tear down around individual tests:
+		
+		                  ┌─────────────────────────────────────────┐
+		                  │       @BeforeAll (Runs ONCE first)      │
+		                  └────────────────────┬────────────────────┘
+		                                       │
+		                    ┌──────────────────┴──────────────────┐
+		                    ▼                                     ▼
+		┌───────────────────────────────────────┐ ┌───────────────────────────────────────┐
+		│     @BeforeEach (Runs before T1)      │ │     @BeforeEach (Runs before T2)      │
+		├───────────────────────────────────────┤ ├───────────────────────────────────────┤
+		│  [ TEST METHOD 1 (@Test) ]            │ │  [ TEST METHOD 2 (@Test) ]            │
+		├───────────────────────────────────────┤ ├───────────────────────────────────────┤
+		│     @AfterEach (Runs after T1)        │ │     @AfterEach (Runs after T2)        │
+		└───────────────────────────────────────┘ └───────────────────────────────────────┘
+		                                       │
+		                  ┌────────────────────┴────────────────────┐
+		                  │        @AfterAll (Runs ONCE at end)     │
+		                  └─────────────────────────────────────────┘
+		
+		@BeforeEach: 
+			Runs its block immediately before every individual @Test method. 
+			Perfect for resetting object properties or cleaning local mock state.
+			
+		@AfterEach: 
+			Fires immediately after each test runs, guaranteeing cleanup even if a test fails.
+			
+		@BeforeAll: 
+			Executes exactly once before any test code in the class starts. Note: Must be declared
+			as a static method. Ideal for booting test containers or cross-suite resource files.
+			
+		@AfterAll: 
+			Executes exactly once after the entire test suite completes. 
+			Used to cleanly disconnect shared test databases.
+	
+	Advanced Parameterized Testing:
+		Instead of duplicating test cases to pass different parameters to the same method, 
+		JUnit 5 introduces Parameterized Tests to supply a stream of inputs 
+		into a single execution test block:
+			import org.junit.jupiter.api.Assertions;
+			import org.junit.jupiter.params.ParameterizedTest;
+			import org.junit.jupiter.params.provider.ValueSource;
+			
+			public class NumberValidationTest {
+			
+			    @ParameterizedTest
+			    @ValueSource(ints = {1, 2, 3}) // Feeds these three discrete arguments one by one into the method
+			    void verifyNumbersArePositive(int number) {
+			        // This single block automatically executes 3 separate times
+			        Assertions.assertTrue(number > 0, "The number was found to be non-positive");
+			    }
+			}
+
+https://junit.org/junit5/docs/current/user-guide/
+
+Mocking Dependencies with Mockito
+	@Mock vs. @InjectMocks:
+	
+	    ┌────────────────────────────────────────────────────────┐
+	    │                 Mockito Extension Context              │
+	    │                                                        │
+	    │  ┌───────────────────────┐     ┌────────────────────┐  │
+	    │  │  @Mock UserRepository │     │ @Mock EmailService │  │
+	    │  │  (Simulated Stub)     │     │ (Simulated Stub)   │  │
+	    │  └───────────┬───────────┘     └───────────┬────────┘  │
+	    │              │                             │           │
+	    │              └──────────────┬──────────────┘           │
+	    │                             ▼ (Auto-Injected)          │
+	    │               ┌───────────────────────────┐            │
+	    │               │ @InjectMocks UserService  │            │
+	    │               │ (The Class Under Test)    │            │
+	    │               └───────────────────────────┘            │
+	    └────────────────────────────────────────────────────────┘
+	
+		@Mock: Instructs Mockito to create a simulated proxy (fake) instance of an external dependency 
+		(e.g., a database repository or external API client).
+		
+		@InjectMocks: Tells Mockito to instantiate the actual class being tested and 
+		automatically wire all generated @Mock instances into its constructor or fields.
+	
+	Advanced Stubbing & Verification Patterns:
+		A. Basic Behavior Stubbing (when().thenReturn())
+			Instructs a mock method to return a controlled payload matching your testing path:
+			
+				// Configures the mock repository to return "Alice" immediately when called with ID 1
+				when(mockRepository.findNameById(1L)).thenReturn("Alice");
+
+		B. Consecutive Stubbing Calls
+			Chain responses to make the same method call behave differently over sequential execution loops:
+			
+				// First call returns "Alice", second call returns "Bob"
+				when(mockRepository.findNameById(1L)).thenReturn("Alice").thenReturn("Bob");
+		
+		C. Simulating Void Method Failures (doThrow())
+			Because void methods do not return a value, you use a reversed syntax structure 
+			to simulate errors and verify your application's exception handling:
+			
+				// Forces a RuntimeException to trigger when trying to delete user #1
+				doThrow(new RuntimeException("Database error")).when(mockRepository).deleteById(1L);
+
+		D. Interaction Verification (verify())
+			Asserts that a specific method was actually invoked on the mock object during the test run, 
+			which is highly useful for validating side effects:
+				
+				// Enforces a strict check that deleteById(1) was executed exactly once during runtime
+				verify(mockRepository, times(1)).deleteById(1L);
+
+	Sample using JUnit 5 and Mockito:
+		import org.junit.jupiter.api.Test;
+		import org.junit.jupiter.api.extension.ExtendWith;
+		import org.mockito.InjectMocks;
+		import org.mockito.Mock;
+		import org.mockito.junit.jupiter.MockitoExtension;
+		
+		import static org.junit.jupiter.api.Assertions.assertEquals;
+		import static org.mockito.Mockito.*;
+		
+		@ExtendWith(MockitoExtension.class) // Initializes Mockito annotations cleanly in JUnit 5
+		public class UserServiceTest {
+		
+		    @Mock
+		    private UserRepository userRepository; // The mocked database layer
+		
+		    @InjectMocks
+		    private UserService userService; // The real service layer with mocks injected
+		
+		    @Test
+		    void testGetUserName_Success() {
+		        // 1. Arrange: Stub out the simulated database call
+		        when(userRepository.findNameById(1L)).thenReturn("mocked user");
+		
+		        // 2. Act: Execute the service business method
+		        String actualResult = userService.getUserName(1L);
+		
+		        // 3. Assert: Verify the output matches exactly
+		        assertEquals("mocked user", actualResult, "The service did not process the mocked name correctly.");
+		        
+		        // 4. Verify: Ensure the repository was safely touched
+		        verify(userRepository, times(1)).findNameById(1L);
+		    }
+		}
+
+https://site.mockito.org/
+
+Testing Services and Controllers
+	Service Layer Testing (Pure Logic Isolation):
+		The service layer is tested in absolute isolation to verify business logic accuracy. 
+		Completely bypass the Spring infrastructure container, using pure JUnit 5 and Mockito to 
+		mock out database repository boundaries.
+		
+			@ExtendWith(MockitoExtension.class) // Lightweight execution (No Spring boot startup container)
+			public class UserServiceTest {
+			
+			    @Mock
+			    private UserRepository userRepository; // Database mock dependency
+			
+			    @InjectMocks
+			    private UserService userService; // Injects the repository mock into the real service
+			
+			    @Test
+			    void testGetUserById_Success() {
+			        // Arrange: Mock database response using Optional wrapped entities
+			        User mockUser = new User(1L, "Alice");
+			        when(userRepository.findById(1L)).thenReturn(Optional.of(mockUser));
+			
+			        // Act: Execute business rule processing
+			        UserResult result = userService.getUserById(1L);
+			
+			        // Assert: Enforce business model expectations
+			        assertEquals("Alice", result.getName());
+			    }
+			}
+
+	Controller Layer Testing (Web Slice Simulation via MockMvc):
+		To test a web endpoint, must verify path mappings (@GetMapping), incoming query parameters, 
+		header attributes, and JSON parsing.
+		
+		Use @WebMvcTest paired with MockMvc. This configuration targets only the web layer in isolation 
+		and blocks the embedded server from starting up, executing ultra-fast HTTP simulations in memory.
+		
+			@WebMvcTest(UserController.class) // Boots only web infrastructure components for UserController
+			public class UserControllerTest {
+			
+			    @Autowired
+			    private MockMvc mockMvc; // Simulates HTTP client requests in memory without network overhead
+			
+			    @MockBean
+			    private UserService userService; // Special Spring annotation that registers a mock into the WebApplicationContext
+			
+			    @Test
+			    void testGetUserController_ReturnsOkAndValidJson() throws Exception {
+			        // 1. Arrange: Stub the service layer dependency injected into the controller
+			        UserDTO responseDto = new UserDTO(1L, "Alice");
+			        when(userService.getUserById(1L)).thenReturn(responseDto);
+			
+			        // 2. Act & Assert: Execute virtual request and instantly string validation checkpoints
+			        mockMvc.perform(MockMvcRequestBuilders.get("/users/1")
+			               .accept(MediaType.APPLICATION_JSON))
+			               .andExpect(MockMvcResultMatchers.status().isOk()) // Asserts HTTP 200 OK status
+			               .andExpect(MockMvcResultMatchers.jsonPath("$.name").value("Alice")); // Asserts JSON payload match
+			    }
+			}
+
+
+		| Feature                | VectorService Layer Testing              | TestingController Layer Testing                 |
+		+------------------------+------------------------------------------+-------------------------------------------------+
+		
+		| Framework Used         | JUnit 5 + Mockito Core                   | JUnit 5 + Spring Web Test (MockMvc)             |
+		| Spring Context Status  | No Context (Zero context setup time)     | Sliced Context (Loads only Web MVC components)  |
+		| Dependency Mock Type   | @Mock (Pure Mockito instance)            | @MockBean (Replaces beans inside Spring Context)|
+		| Primary Test Focus     | Core business rule logic & DB mapping    | Request routing, DTO constraints, & HTTP status |
+		| Execution Speed        | Extremely fast (milliseconds)            | Fast (minimal container overhead)               |
+		+------------------------+------------------------------------------+-------------------------------------------------+
+
+https://docs.spring.io/spring-boot/docs/current/reference/html/features.html#features.testing
+
+MockMvc for HTTP Layer Testing
+	What is MockMvc and Why Use It?
+		MockMvc is a core component of the Spring Test module designed specifically to test Spring MVC controllers.
+		
+		The Problem: 
+			Running a full enterprise @SpringBootTest context starts the entire embedded web server (like Tomcat), 
+			which is slow and memory-intensive for simple endpoint checks.
+		
+		The Solution: 
+			Pair @WebMvcTest with MockMvc. This configuration boots only the web infrastructure layer in isolation. 
+			It completely handles virtual HTTP routing, security validations, 
+			and status mappings in memory without starting a real server.
+	
+	Critical Assertions & Utility Matchers:
+		status().isOk(): 
+			Confirms that the target endpoint returns an HTTP 200 status.
+		
+		status().isBadRequest(): 
+			Verifies that input schema validation errors cleanly yield an HTTP 400 response.
+		
+		jsonPath("$.name"): 
+			Uses specialized JSONPath syntax to parse response data fields and inspect internal properties directly 
+			(e.g., verifying a specific field equals a value).
+		
+		header().string(name, value): 
+			Validates response header configurations (e.g., checking location headers after a POST).
+		
+		content().string(value): 
+			Verifies raw string contents of the response body.
+	
+	Setup vs. Teardown
+		Setup: 
+			The process of preparing the test context, configuring objects, or inserting necessary database rows before a test runs.
+		
+		Teardown: 
+			The process of wiping state, dropping temporary database rows, or releasing resources after a test finishes.
+	
+	Methods for Managing Test Data State:
+		Method A: Code-Based Assertions (@BeforeEach & @AfterEach)
+			The most common approach for standard object manipulation. These blocks run sequentially around every individual test:
+			
+			@BeforeEach
+			void setUp() {
+			    // Executes BEFORE every single test method runs
+			    System.out.println("Preparing local state objects...");
+			}
+			
+			@AfterEach
+			void tearDown() {
+			    // Executes AFTER every single test method runs
+			    System.out.println("Cleaning up local state objects...");
+			}
+
+		Method B: Script-Based Execution (@Sql)
+			Best suited for Integration Testing with a real database. 
+	 		Instruct Spring to run explicit SQL files at specific parts of the test phase:
+
+			@Test
+			@Sql(scripts = "/test-data.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
+			@Sql(scripts = "/clean-up.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
+			void testDatabaseFetch() {
+			    // Data is cleanly populated before this test and wiped immediately after
+			}
+
+		Method C: EntityManager Control (TestEntityManager)
+		Used extensively in JPA slice testing (@DataJpaTest) to manually persist and 
+		clear records out of the Hibernate session:
+		
+			@Autowired
+			private TestEntityManager entityManager;
+			
+			@BeforeEach
+			void initData() {
+			    entityManager.persist(new User("Alice")); // Manually setups target records
+			}
+			
+			@AfterEach
+			void cleanData() {
+			    entityManager.clear(); // Flushes the structural tracking memory
+			}
+
+https://docs.spring.io/spring-framework/reference/testing/mockmvc.html
+
+Automating Tests in CI Pipelines
+	Continuous Integration Test Pipeline Flow
+	[ Developer Commit / PR ] ➔ 1. Pipeline Triggered (OS Environment Init)
+                                         │
+                                         ▼
+                             2. Setup Java Runtime (JDK)
+                                         │
+                                         ▼
+                             3. Run Unit Tests (Fast Validation)
+                                         │
+                        Fails?           ▼ Passes?
+                 (BLOCK & ALERT) 🡨 [ Quality Gate ] ➔ 4. Run Integration Tests (Deep Check)
+                                                                 │
+                                                                 ▼
+                                                      5. Code Quality & Linting
+                                                                 │
+                                                                 ▼
+                                                      [ Merged & Deployed ]
+
+		Early Bug Resolution: 
+			Bugs are caught instantly in isolation rather than compounding into complex integration failures down the line.
+		Fail-Fast Enforcement: 
+			If a single unit or integration test fails, the pipeline terminates immediately, 
+			rejecting the code push and preventing regressions from entering the codebase.
+			
+https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-java-with-maven
+
+Caching with Spring Cache and Redis
+	Spring Cache:
+		Spring Cache provides an elegant, annotation-driven abstraction layer. This allows developers to toggle  
+		underlying caching engines purely via configuration without altering core business source code.
+	
+		@Cacheable (Read Optimization): 
+			Intercepts method execution. It checks the target cache registry using a calculated key (e.g., #id). 
+			If a Cache Hit occurs, it completely skips the method execution block and returns the stored memory payload instantly. 
+			If a Cache Miss occurs, it runs the database query and saves the result in the cache.
+			
+		@CachePut (Write/Update Synchronisation): 
+			Enforces execution of the business method to update the database, while simultaneously 
+			updating the cache registry with the fresh result. This is used exclusively for update operations.
+			
+		@CacheEvict (Data Wiping/Deletion): 
+			Explicitly clears stale or removed data out of the cache registry. 
+			This is vital for delete operations to prevent the application from serving ghost or contaminated data.
+	
+	Why Choose Redis for Distributed Topologies?
+		While local in-memory caches (like ConcurrentHashMap) are exceptionally fast, they are isolated to a single application instance. 
+		In modern distributed microservices, Redis is preferred because:
+		
+		Distributed Memory Consistency: 
+			Acts as a shared, external caching tier accessible simultaneously by multiple instances of a scaled microservice.
+			
+		TTL (Time-To-Live) Mechanics: 
+			Supports explicit expiration timelines attached to records, automatically purging aged data 
+			to prevent memory bloat and stale data reads.
+		High-Speed Throughput: 
+			Operates entirely in memory as a optimized key-value store capable of handling massive transactional traffic.	
+	
+	To initialize Spring Cache with a Redis engine, pull in the core starter block inside your pom.xml:
+		<dependency>
+		    <groupId>org.springframework.boot</groupId>
+		    <artifactId>spring-boot-starter-data-redis</artifactId>
+		</dependency>
+
+	Step A: Activate the Cache Engines
+		Decorate your primary application bootstrap or structural configuration class with 
+		@EnableCaching to trigger the background post-processors:
+		
+			@SpringBootApplication
+			@EnableCaching // Powers up the automated Spring annotation cache proxy engines
+			public class PerformanceOptimizationApplication {
+			    public static void main(String[] args) {
+			        SpringApplication.run(PerformanceOptimizationApplication.class, args);
+			    }
+			}
+
+	Step B: Wire Cache Hooks into the Service Layer
+	
+		@Service
+		public class UserService {
+		
+		    @Autowired
+		    private UserRepository userRepository;
+		
+		    // 1. READ: Caches results using the user's ID as the unique key
+		    @Cacheable(value = "users", key = "#id")
+		    public User getUserById(Long id) {
+		        System.out.println("Cache Miss! Fetching user directly from the database...");
+		        return userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found"));
+		    }
+		
+		    // 2. UPDATE: Synchronizes the cache value whenever a user profile changes
+		    @CachePut(value = "users", key = "#user.id")
+		    public User updateUser(User user) {
+		        System.out.println("Updating database and refreshing cache entry synchronously...");
+		        return userRepository.save(user);
+		    }
+		
+		    // 3. DELETE: Wipes the cache entry instantly to prevent stale reads
+		    @CacheEvict(value = "users", key = "#id")
+		    public void deleteUser(Long id) {
+		        System.out.println("Removing user row from database and evicting cache block...");
+		        userRepository.deleteById(id);
+		    }
+		}
+
+	Step C: Target Connection Routing inside application.yml
+		Route the Spring Data client engine to connect directly to the standard Redis networking port (6379):
+		
+		spring:
+		  cache:
+		    type: redis                      # Explicitly binds the caching abstraction to Redis
+		  data:
+		    redis:
+		      host: localhost
+		      port: 6379                     # Default Redis server port
+
+	How to Use Redis Directly (Without Spring Cache)
+		When you omit @EnableCaching, Spring Boot still configures the underlying Redis connection factories for you. 
+		You just need to inject Spring's RedisTemplate or StringRedisTemplate to interact with your data.
+		
+		1. Add the Dependency
+		
+			<dependency>
+			    <groupId>org.springframework.boot</groupId>
+			    <artifactId>spring-boot-starter-data-redis</artifactId>
+			</dependency>
+
+		2. Inject and Use StringRedisTemplate
+			For standard key-value pairs where both keys and values are strings, 
+			StringRedisTemplate is the easiest, read-to-use tool out of the box:
+
+			import org.springframework.data.redis.core.StringRedisTemplate;
+			import org.springframework.beans.factory.annotation.Autowired;
+			import org.springframework.stereotype.Service;
+			import java.util.concurrent.TimeUnit;
+			
+			@Service
+			public class TokenService {
+			
+			    @Autowired
+			    private StringRedisTemplate redisTemplate;
+			
+			    public void saveToken(String userId, String token) {
+			        // Explicitly set a key, value, and an exact 15-minute expiration time
+			        redisTemplate.opsForValue().set(userId, token, 15, TimeUnit.MINUTES);
+			    }
+			
+			    public String getToken(String userId) {
+			        // Directly fetch the value by key
+			        return redisTemplate.opsForValue().get(userId);
+			    }
+			
+			    public void deleteToken(String userId) {
+			        // Manually delete the key
+			        redisTemplate.delete(userId);
+			    }
+			}
+
+		| Feature           | Using Spring Cache (@Cacheable)         | Using Direct Redis (RedisTemplate)      |
+		+-------------------+-----------------------------------------+-----------------------------------------+
+		
+		| Primary Focus     | Quick performance caching of database   | Custom data storage, messaging, session |
+		|                   | or API results.                         | tokens, and rate limiting.              |
+		+-------------------+-----------------------------------------+-----------------------------------------+
+		
+		| Code Style        | Declarative. Uses annotations directly  | Programmatic. Requires writing explicit |
+		|                   | on top of your methods.                 | lines of Java code.                     |
+		+-------------------+-----------------------------------------+-----------------------------------------+
+		
+		| Data Structures   | Limited strictly to standard            | Full support for Strings, Lists, Sets,  |
+		|                   | Key-Value maps.                         | Sorted Sets, and Hashes.                |
+		+-------------------+-----------------------------------------+-----------------------------------------+
+		
+		| Control           | Automatic. Spring entirely handles when | Manual. You have absolute control over  |
+		|                   | data is read, written, or cleared.      | every single Redis command and TTL.     |
+		+-------------------+-----------------------------------------+-----------------------------------------+
+
+https://medium.com/@tharindudulshanfdo/spring-boot-caching-a-comprehensive-guide-to-improve-application-performance-3aa06f4d28f9
+
+JPA/Hibernate Performance Tips
+	Strategy A: Eliminate the N+1 Problem via Fetch Joins
+		The Problem: 
+			By default, if a Department entity has a lazy-loaded collection of Employees, fetching 10 departments will 
+			trigger 1 initial query for the departments, followed by 10 separate subsequent queries to fetch the employees 
+			for each individual department (N+1 queries).
+			
+		The Solution: 
+			Use JOIN FETCH within your @Query definition to pull the parent entity and 
+			all its related child records in one single database round-trip.
+			
+			@Repository
+			public interface DepartmentRepository extends JpaRepository<Department, Long> {
+			    @Query("SELECT d FROM Department d JOIN FETCH d.employees")
+			    List<Department> findAllWithEmployees(); // Loads both datasets in a single execution block
+			}
+
+	Strategy B: Paginate Large Datasets (Pageable
+		The Problem: 
+			Fetching thousands of rows into server memory all at once slows down the application and risks triggering an OutOfMemoryError.
+			
+		The Solution: 
+			Pass a Spring Data Pageable argument to divide massive tables into controlled, digestible pages, 
+			fetching records incrementally on demand.
+			
+			Page<User> findByStatus(String status, Pageable pageable);
+
+	Strategy C: Bypass Dirty Checking using Query Hints (ReadOnly)
+		The Problem: 
+			Hibernate keeps a copy of every fetched entity in its persistence context cache to track changes ("dirty checking"). 
+			This consumes CPU cycles and memory during pure read-only operations.
+			
+		The Solution: 
+			Inject an org.hibernate.readOnly query hint. This tells Hibernate to skip dirty checking, 
+			substantially improving retrieval speeds.
+			
+			@QueryHints(value = @QueryHint(name = "org.hibernate.readOnly", value = "true"))
+			@Query("SELECT u FROM User u WHERE u.active = true")
+			List<User> findActiveUsers();
+
+	Strategy D: Fetch Only Required Fields via DTO Projections
+		The Problem: 
+			Executing SELECT * style object queries loads complete entity objects along with all their heavy, 
+			unneeded columns and relationships.
+			
+		The Solution: 
+			Use DTO Projections inside your JPQL query to target and extract only the exact fields required by the view layer.
+			
+			@Query("SELECT new com.enterprise.dto.UserSummaryDTO(u.id, u.name) FROM User u")
+			List<UserSummaryDTO> fetchUserSummaries(); // Completely avoids loading heavy, unneeded entity columns
+
+	Strategy E: Database Indexing & Optimized Native Queries
+		Database Indexes: 
+			Always create physical indexes on columns heavily queried inside your WHERE clauses.
+			
+		Native Queries: 
+			For ultra-complex reports or database-specific optimizations, break away from JPQL abstractions and 
+			execute optimized, raw SQL by setting nativeQuery = true.
+			
+			@Query(value = "SELECT * FROM users_table WHERE complex_indexed_status = :status", nativeQuery = true)
+			List<User> fetchViaComplexNativeSQL(@Param("status") String status);
+		
+		| Technical Technique  | Primary Benefit                        | Solves Which Bottleneck?                |
+		+----------------------+----------------------------------------+-----------------------------------------+
+		
+		| JOIN FETCH           | Reduces network round-trips to 1       | The Cascading N+1 Query Defect.         |
+		|                      | single database query.                 |                                         |
+		+----------------------+----------------------------------------+-----------------------------------------+
+		
+		| Pageable Pagination  | Avoids massive row allocation in data  | System-wide Memory Exhaustion (OOM).    |
+		|                      | models and heap memory.                |                                         |
+		+----------------------+----------------------------------------+-----------------------------------------+
+		
+		| @QueryHint           | Skips automatic Hibernate dirty checks | High CPU usage on large or nested       |
+		| (Read-Only)          | and persistence context management.    | entity fetch cycles.                    |
+		+----------------------+----------------------------------------+-----------------------------------------+
+		
+		| DTO Projections      | Loads only explicit, narrow columns     | Unnecessary object relationship weight  |
+		|                      | instead of fetching whole tables.      | and unindexed heap load.                |
+		+----------------------+----------------------------------------+-----------------------------------------+
+		
+		| Native Queries       | Directly leverages native database     | Sub-optimal or inefficient abstract     |
+		|                      | optimizations and features.            | JPQL query rendering.                   |
+		+----------------------+----------------------------------------+-----------------------------------------+
+
+	4 Critical Performance Bottleneck Dimensions
+		Database Tier: 
+			Caused by slow queries, missing indexes, unoptimized table lookups, or the cascading N+1 query defect.
+			
+		Application Logic Code: 
+			Driven by inefficient loops, heavy memory allocation, blocking Input/Output (I/O) processing, or memory leaks.
+			
+		API Routing Layer: 
+			Caused by overfetching excessive data columns, massive JSON payloads, or sub-optimal caching strategies.
+			
+		Hardware Infrastructure: 
+			Expressed as sudden CPU utilization spikes, garbage collection (GC) pauses, or memory starvation.
+			
+	Comprehensive Bottleneck Detection Tool Matrix
+		| Tooling Tier         | Core Framework / Tool                  | Technical Responsibility                |
+		+----------------------+----------------------------------------+-----------------------------------------+
+		
+		| Telemetry & Metrics  | Spring Boot Actuator                   | Exposes native system health endpoints  |
+		|                      |                                        | and raw operational metrics inside your |
+		|                      |                                        | application.yml properties.             |
+		+----------------------+----------------------------------------+-----------------------------------------+
+		
+		| Metric Accumulation  | Micrometer + Prometheus                | Gathers and scrapes real-time application|
+		|                      |                                        | counters, gauges, and active timers for |
+		|                      |                                        | visual dashboards.                      |
+		+----------------------+----------------------------------------+-----------------------------------------+
+		
+		| Distributed Tracing  | Micrometer Tracing + Zipkin            | Tracks the complete end-to-end lifecycle|
+		|                      | (formerly Spring Cloud Sleuth)         | of slow queries/requests across deep    |
+		|                      |                                        | microservice boundaries.                |
+		+----------------------+----------------------------------------+-----------------------------------------+
+		
+		| Code Profiling       | JProfiler / VisualVM                   | Attaches to the JVM process to analyze  |
+		|                      |                                        | heap dumps, monitor thread states, and  |
+		|                      |                                        | isolate CPU execution hot spots.        |
+		+----------------------+----------------------------------------+-----------------------------------------+
+		
+		| Log Management       | ELK Stack                              | Centralizes microservice logs to search |
+		|                      | (Elasticsearch, Logstash, Kibana)      | for slow timestamps, DB timeouts, and  |
+		|                      |                                        | runtime memory warnings.                |
+		+----------------------+----------------------------------------+-----------------------------------------+
+		
+		| Stress Testing       | JMeter / Gatling / K6                  | Simulates massive concurrent traffic    |
+		|                      |                                        | loops to reveal application bottlenecks |
+		|                      |                                        | and failure points under heavy load.    |
+		+----------------------+----------------------------------------+-----------------------------------------+
+
+	Strategic Workflow for Monitoring and Diagnostics
+		Step A: Activating Telemetry via application.yml
+			To allow APM tools or developer dashboards to scan your application internals, 
+			you must explicitly expose the actuator infrastructure:
+			
+			management:
+			  endpoints:
+			    web:
+			      exposure:
+			        include: health, metrics, prometheus  # Exposes vital operational stats to the web layer
+
+https://docs.spring.io/spring-boot/docs/current/reference/html/actuator.html
+
+		Step B: Diagnosing Database Performance
+			To detect hidden N+1 defects or slow database query round-trips locally, 
+			track generated queries using Hibernate logging properties:
+
+			spring:
+			  jpa:
+			    properties:
+			      hibernate:
+			        show_sql: true                       # Logs raw generated SQL statements to the console
+			        format_sql: true
+			        generate_statistics: true            # Tracks precise session latency and query metrics
+
+			Advanced Monitoring: 
+				For full cloud production clusters, swap console logging for professional APM (Application Performance Monitoring) platforms 
+				like Datadog or New Relic to trap structural degradation automatically.
+				
+https://medium.com/@lm.moreira/a-little-bit-about-hibernate-jpa-and-databases-from-a-performance-perspective-6dfceddc88ec
+
+		Step C: Analyzing Log Indicators
+			When auditing application layers for stability issues, inspect log streams for three specific warning indicators:
+				Timestamp Latency: 
+					Gaps between sequential log steps that flag blocking I/O operations or deadlocked threads.
+				
+				Timeout Stack Traces: 
+					Network exceptions proving that downstream microservices are running too slow or hanging completely.
+					
+				Frequent GC Eviction Logs: 
+					Repetitive Garbage Collection activity warnings signaling a high risk of an imminent application crash.	
+
+https://www.baeldung.com/spring-boot-logging
+						
+Monitoring with Prometheus and Grafana
+	A. Prometheus (The Time-Series Database)
+		Prometheus operates on a Pull Model. It reads configuration endpoints to periodically scrape plain-text metrics 
+		over HTTP from active target microservices, storing the measurements in a highly optimized time-series database. 
+		It features PromQL, a functional query language used to calculate complex trends like error rates or CPU spikes.
+		
+	B. Grafana (The Visualization Engine)
+		Grafana acts as the visual reporting layer. It connects directly to Prometheus data sources, issuing PromQL queries 
+		to display interactive graphs tracking JVM heap health, live HTTP latency percentiles, and database connection pools.
+
+https://prometheus.io/docs/introduction/overview/

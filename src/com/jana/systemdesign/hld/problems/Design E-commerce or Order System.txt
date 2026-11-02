@@ -1,0 +1,226 @@
+Design an e-commerce system where users can:
+    Browse products
+    Search products
+    View product details
+    Add products to cart
+    Place orders
+    Make payments
+    Reserve inventory
+    Track orders
+    Cancel orders
+    Receive notifications
+
+Example
+    Customer
+    |
+    ▼
+    Product → Cart → Order → Payment
+                        |
+                        ├── Inventory
+                        ├── Shipment
+                        └── Notification
+
+For the interview, focus primarily on:
+    Product → Cart → Order → Inventory → Payment → Shipment → Order tracking
+
+Functional Requirements:
+Customer
+    Register/login
+    Browse products
+    Search products
+    Add/remove cart items
+    Checkout
+    Place order
+    Make payment
+    View order history
+    Cancel order
+    Track shipment
+Admin
+    Add/update products
+    Manage inventory
+    Update prices
+    Manage orders
+    View sales
+Optional
+    Coupons
+    Reviews
+    Recommendations
+    Wishlist
+    Returns/refunds
+    Multiple sellers
+    Auctions
+
+In an interview, explicitly scope the problem:
+    I'll focus on a single-vendor e-commerce system initially 
+    and discuss multi-vendor extensions separately.
+
+Non-Functional Requirements:
+    | Requirement  | Importance    |
+    | ------------ | ------------: |
+    | Availability |      ⭐⭐⭐⭐⭐ |
+    | Scalability  |      ⭐⭐⭐⭐⭐ |
+    | Consistency  |      ⭐⭐⭐⭐⭐ |
+    | Reliability  |      ⭐⭐⭐⭐⭐ |
+    | Low latency  |       ⭐⭐⭐⭐  |
+    | Durability   |      ⭐⭐⭐⭐⭐ |
+    | Security     |      ⭐⭐⭐⭐⭐ |
+
+Important: Different operations need different consistency.
+
+    Product browsing => Eventual consistency is usually acceptable.
+
+    Inventory => Strong consistency is important.
+
+    Payment/order state => Strong business consistency is critical.
+
+Flow:
+            Customer
+            |
+            | POST /orders
+            ▼
+            Order Service
+            |
+            | Validate cart/product/price
+            ▼
+            Create PENDING order
+            |
+            ▼
+            Reserve Inventory
+            |
+            ├── FAIL → Order CANCELLED
+            |
+            ▼
+            Inventory RESERVED
+            |
+            ▼
+            Payment Service
+            |
+            ├── FAIL → Release Inventory → CANCEL
+            |
+            ├── UNKNOWN → Reconcile
+            |
+            ▼
+            Payment SUCCESS
+            |
+            ▼
+            Order CONFIRMED
+            |
+            ▼
+            Kafka: OrderConfirmed
+            |
+            ├───────────────┐
+            ▼               ▼
+            Shipment       Notification
+            |               |
+            ▼               ├── Push
+            Courier            ├── SMS
+                            └── Email
+
+Architecture:
+                         CUSTOMER
+                            |
+                            ▼
+                     ┌──────────────┐
+                     │ Load Balancer│
+                     └──────┬───────┘
+                            |
+                            ▼
+                     ┌──────────────┐
+                     │ API Gateway  │
+                     └──────┬───────┘
+                            |
+        ┌───────────────────┼────────────────────┐
+        |                   |                    |
+        ▼                   ▼                    ▼
+ Product Service       Cart Service        Order Service
+        |                   |                    |
+        ▼                   ▼                    ▼
+ Product DB              Redis              Order DB
+        |
+        ▼
+ Search Index
+
+                            |
+                            ▼
+                    ┌────────────────┐
+                    │     Kafka      │
+                    └───────┬────────┘
+                            |
+              ┌─────────────┼─────────────┐
+              ▼             ▼             ▼
+         Inventory       Payment       Notification
+          Service        Service         Service
+              |             |               |
+              ▼             ▼               ├── Email
+        Inventory DB   Payment DB           ├── SMS
+                            |               └── Push
+                            ▼
+                     Payment Gateway
+
+                            |
+                            ▼
+                     Shipment Service
+                            |
+                            ▼
+                     Courier Provider
+
+Interview Explanation:
+    I would design the e-commerce system around Product, Cart, Order, Inventory, Payment, 
+    Shipment and Notification domains, with Kafka for asynchronous communication.
+
+    The customer first browses products through the Product Service. Product data is read-heavy, 
+    so I would use Redis for caching and a search engine such as OpenSearch or Elasticsearch 
+    for product search. The Product Database remains the source of truth.
+
+    The user adds products to the Cart Service and then initiates checkout. 
+    At checkout, the server revalidates product availability and current pricing 
+    because cart data may be stale. The client-provided price is never trusted.
+
+    When the user creates an order, I would require an idempotency key so a network retry 
+    cannot create duplicate orders. The Order Service creates the order in a `PENDING` state and records the 
+    order items with price snapshots so historical orders are not affected by future product price changes.
+
+    The next important step is inventory reservation. I would use an atomic conditional database update 
+    or optimistic locking to prevent two customers from purchasing the last item simultaneously. 
+    Instead of permanently deducting stock immediately, I would maintain available, 
+    reserved and sold quantities. Inventory reservations can expire if payment is not completed.
+
+    Payment is handled by a separate Payment Service because the payment provider is an external system. 
+    Order, inventory and payment have separate data stores, so I would not try to use one distributed
+    ACID transaction. Instead, I would use a Saga workflow with compensating actions. For example, 
+    if inventory is reserved but payment fails, the system releases the inventory and cancels the order.
+
+    Payment timeouts require special handling. I would not immediately mark the payment as failed 
+    because the provider may have successfully processed the payment even though our request timed out. 
+    I would use provider idempotency keys and reconciliation APIs to determine the final payment state.
+
+    For asynchronous communication, I would use Kafka for events such as `OrderCreated`, `InventoryReserved`, 
+    `PaymentCompleted`, `OrderConfirmed` and `OrderCancelled`. I would use the Transactional Outbox pattern 
+    so an order database transaction and its corresponding event are persisted reliably before publishing to Kafka.
+
+    After payment succeeds, the order becomes `CONFIRMED`. An `OrderConfirmed` event can then trigger Shipment 
+    and Notification services independently. Notification failure should not cause a confirmed order to fail.
+
+    The order lifecycle would be represented as a state machine such as `CREATED`, `INVENTORY_RESERVED`, 
+    `PAYMENT_PROCESSING`, `PAID`, `CONFIRMED`, `PACKED`, `SHIPPED` and `DELIVERED`, 
+    with controlled cancellation and refund states.
+
+    For reliability, I would use retries with exponential backoff for transient failures, 
+    circuit breakers for unhealthy external providers, and idempotent consumers to handle duplicate Kafka messages. 
+    A reconciliation process would periodically detect orders stuck in states such as `PAYMENT_PENDING` 
+    and compare our state with the payment provider.
+
+    For scalability, Product and Search services can scale independently and use caching/CDN. 
+    Order and Inventory services can scale horizontally, while Kafka partitions allow asynchronous workers 
+    to process events in parallel. For flash sales, I would add admission control, queues and atomic inventory 
+    reservation to protect the inventory service from extreme traffic.
+
+    Finally, I would monitor order creation and confirmation rates, payment failures, inventory reservation failures, 
+    Kafka consumer lag, API latency, stuck orders and provider health.
+
+    The core design principle is:
+        keep order and inventory correctness strong, use Saga and Outbox for distributed workflows, 
+        use Kafka for asynchronous processing, and use idempotency and reconciliation to make the system reliable.
+
+
+

@@ -1,0 +1,175 @@
+		                    DATABASE
+		                       |
+		        ┌──────────────┴──────────────┐
+		        ↓                             ↓
+		       SQL                          NoSQL
+		        |                             |
+		   Transactions                  Key-Value
+		   ACID                          Document
+		   Index                         Wide Column
+		   Isolation                     Graph
+		   Locking
+		   Replication
+		   Partitioning
+		        |
+		        ↓
+		   Distributed DB
+		        |
+		   ┌────┼─────┐
+		   ↓    ↓     ↓
+		 CAP  Consistency  Availability
+		        |
+		        ↓
+		 Partition Tolerance
+		        |
+		        ↓
+		 Eventual Consistency
+		 
+1. What Is a Distributed System?
+	A distributed system has:
+		Multiple independent machines working together as one logical system.
+	Example:
+	             Load Balancer
+	            /      |      \
+	           S1     S2      S3
+	            \      |      /
+	                Database
+	
+	These machines communicate over a network.
+	And networks can fail.
+	That's the fundamental problem.
+	
+2. CAP Theorem ⭐⭐⭐⭐⭐
+		C → Consistency
+		A → Availability
+		P → Partition Tolerance
+	
+	The key idea:
+	When a network partition occurs, a distributed system must trade off strong consistency against availability.
+	
+	This is the part many candidates incorrectly memorize as:
+	"You can only choose two of three."
+	That's an oversimplification.
+	
+	In a real distributed system, partition tolerance is generally necessary because network partitions can happen. 
+	The important trade-off during a partition is: Consistency vs Availability
+
+3. Consistency
+	Every client should see data according to the system's consistency guarantees.
+	Strong consistency example:
+		Write: Balance = ₹500
+		Immediately read: Balance = ₹500
+	The system doesn't return an older value after the successful write.
+
+4. Availability
+	Every request to a healthy reachable node receives a response, even if some other nodes are unavailable.
+	Example:
+		Node 1 ❌
+		Node 2 ✅
+		Node 3 ✅
+	
+	Requests can still be served.
+	Availability doesn't necessarily mean the returned data is the newest possible data.
+
+5. Partition Tolerance
+	A network partition means nodes cannot communicate reliably.
+	      Network
+	        X
+	        X
+	        X
+	   ┌────┘ └────┐
+	   ↓           ↓
+	 Node A      Node B
+	
+	The system must continue operating according to its design despite this communication failure.
+
+6. CAP Example
+	Suppose: Bank balance = ₹1000
+	Two replicas:
+		Node A → ₹1000
+		Node B → ₹1000
+	
+	Network partition occurs: A   X   B
+	User sends: Withdraw ₹500
+	
+	If the system chooses strong consistency:
+		Node A
+		  ↓
+		Cannot safely coordinate with B
+		  ↓
+		Reject / wait
+	Availability decreases.
+	
+	If it chooses availability:
+		Node A
+		  ↓
+		Accept request
+	it may temporarily return conflicting/stale state.
+	This is the fundamental trade-off.
+
+7. Eventual Consistency ⭐⭐⭐⭐⭐
+	If no new updates occur and the system remains healthy, replicas will eventually converge to the same value.
+	Example:
+		Time 1:
+		Primary → ₹500
+		Replica → ₹400
+	Later: Replica → ₹500
+	Useful for:
+		Social feeds
+		Likes
+		View counts
+		Search indexes
+		Analytics
+		Recommendations
+	But dangerous for certain critical invariants if used naively.
+
+8. Strong vs Eventual Consistency
+	| Strong                           | Eventual                        |
+	| -------------------------------- | ------------------------------- |
+	| Latest committed value expected  | Temporary stale values possible |
+	| Higher coordination              | Less coordination               |
+	| Often higher latency             | Often lower latency             |
+	| Financial balances               | Social likes/feed               |
+	| Inventory/payment critical paths | Analytics                       |
+
+9. Database + Distributed System Relationship
+	Suppose: Order Service -> PostgreSQL
+	Traffic increases:
+	                 LB
+	              /  |  \
+	             S1 S2 S3
+	                 |
+	                DB
+	DB becomes bottleneck.
+	
+	Then: Add Redis, Add replicas
+	                 LB
+	              /  |  \
+	             S1 S2 S3
+	                |
+	              Redis
+	                |
+	             DB Primary
+	             /       \
+	        Replica 1   Replica 2
+	        
+	Then huge data: Add sharding, Increase isolation
+	             Application
+	                  |
+	        ┌─────────┼─────────┐
+	        ↓         ↓         ↓
+	      Shard 1   Shard 2   Shard 3
+	
+	Each improvement introduces new trade-offs.
+
+
+
+
+
+
+
+
+
+
+
+

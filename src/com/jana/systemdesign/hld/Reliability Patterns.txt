@@ -1,0 +1,483 @@
+"What happens when something fails?"
+	In real distributed systems, failures are normal:
+		Network timeout
+		Service unavailable
+		Database slow
+		Kafka unavailable
+		External API failure
+		Server crash
+		Duplicate request
+		Partial transaction failure
+
+The patterns essential for Java/Spring Boot HLD interviews:
+	| Pattern         | Problem Solved            | Simple Meaning         |
+	| --------------- | ------------------------- | ---------------------- |
+	| Timeout         | Slow dependency           | Stop waiting           |
+	| Retry           | Temporary failure         | Try again              |
+	| Backoff         | Retry storm               | Wait progressively     |
+	| Circuit Breaker | Repeated failure          | Stop calling           |
+	| Idempotency     | Duplicate request         | Same effect once       |
+	| Saga            | Multi-service transaction | Compensate             |
+	| Bulkhead        | Resource exhaustion       | Isolate failures       |
+	| DLQ             | Repeated event failure    | Park for investigation |
+
+1. Retry ⭐⭐⭐⭐⭐
+	Automatically attempt a failed operation again when the failure is likely to be temporary.
+
+	Client → Service A → Service B → Failure → Retry → Retry → Success
+
+	When should retry?
+		Temporary network failure
+		Connection timeout
+		Temporary service unavailable
+		Transient database/network issue
+		HTTP 503
+		Some rate-limit responses
+	
+	Don't blindly retry:
+		Invalid request ❌
+		Authentication failure ❌
+		Business rejection ❌
+		Insufficient balance ❌
+		Invalid card ❌≥
+		Malformed data ❌
+	
+	For example: Insufficient balance retryingg 3 times doesn't make sense.
+
+2. Exponential Backoff ⭐⭐⭐⭐⭐
+	Bad retry:
+		Retry immediately
+		Retry immediately
+		Retry immediately
+		Retry immediately
+	If 10,000 clients do this simultaneously, you can overload the failing service.
+	
+	Instead:
+		Attempt 1 -> wait 100 ms
+		Attempt 2 -> wait 200 ms
+		Attempt 3 -> wait 400 ms
+		Attempt 4 -> wait 800 ms
+	
+	Conceptually: delay = baseDelay × 2^attempt
+	
+	Usually add jitter: delay = exponentialBackoff + randomJitter
+	This prevents synchronized retries, sometimes called a retry storm.
+
+3. Retry Must Have a Limit
+	Never:
+		while(true)
+		    retry();
+	
+	Use:
+		Maximum attempts
+		Maximum elapsed time
+		Timeout
+		Backoff
+	
+	Example:
+		Maximum attempts = 3
+		Initial delay = 200ms
+		Maximum delay = 2s
+	Exact values depend on the workload.
+
+4. Retry + Idempotency ⭐⭐⭐⭐⭐
+	This is extremely important.
+	Suppose: POST /payments
+	The payment service sends the request to a bank.
+	
+	Bank processes: ₹1,000 deducted ✅
+	But the response is lost: Bank → Response ❌
+	Your service sees: Timeout
+	
+	If you blindly retry: ₹1,000 deducted again ❌
+	Potential double payment.
+	
+	Therefore, Retries on side-effecting operations require idempotency or another mechanism 
+	that safely determines whether the original operation succeeded.
+
+5. Retry vs Timeout
+	Timeout = Stop waiting after a defined period.
+	Request -> Wait 2 sec -> Timeout
+	
+	Retry = Attempt the operation again.
+	Timeout -> Retry
+	
+	Typical combination: Timeout -> Retry with backoff. But only when retry is safe.
+
+6. Circuit Breaker ⭐⭐⭐⭐⭐
+	Suppose:
+		Service A → Service B ❌
+		Service B is continuously failing.
+	
+	Without a circuit breaker:
+			A → B ❌
+			A → B ❌
+			A → B ❌
+			A → B ❌
+			...
+	
+	Service A wastes:
+			Threads
+			Connections
+			CPU
+			Memory
+			Network
+	
+	Eventually Service A can also fail. This is called cascading failure.
+
+7. Circuit Breaker States
+	             failures
+	CLOSED ─────────────────→ OPEN
+	                           |
+	                           | wait
+	                           ↓
+	                      HALF-OPEN
+	                       /       \
+	                  success      failure
+	                    ↓             ↓
+	                 CLOSED          OPEN
+
+8. CLOSED
+	Normal operation: Service A → Service B → Success
+	
+	Circuit breaker monitors: Failures, Timeouts, Error rate
+	
+	Example: Failure threshold = 50%
+	
+	If failures cross the configured threshold: CLOSED → OPEN
+
+9. OPEN
+	The circuit is open. Requests don't keep calling the failing service.
+	
+	Service A → Circuit Breaker → OPEN → Fail fast
+	This protects both: Calling service + Failing service
+	
+	Depending on the application, the system may return:
+		Fallback response
+		HTTP 503
+		Cached result
+		Queued request
+
+10. HALF-OPEN
+	After a configured wait period: OPEN→ Wait→ HALF-OPEN
+	The system allows a small number of test requests.
+	
+	If they succeed: HALF-OPEN → CLOSED
+	If they fail: HALF-OPEN → OPEN
+
+11. Circuit Breaker ≠ Retry ⭐⭐⭐⭐⭐
+	Very common interview question.
+		Retry = "Try again."
+		Circuit Breaker = "Stop calling the failing service for now."
+	
+	They often work together:
+				Request
+				  ↓
+				Timeout
+				  ↓
+				Retry
+				  ↓
+				Still failing
+				  ↓
+				Circuit opens
+				  ↓
+				Fail fast
+				
+	But retry policies must be carefully bounded so they don't undermine the circuit breaker.
+
+12. Idempotency ⭐⭐⭐⭐⭐
+	Repeating the same request does not create an additional business effect.
+	
+	Example: Request ID = ABC123
+	First request:
+		ABC123
+		 ↓
+		Process payment
+		 ↓
+		Success
+	
+	Retry:
+		ABC123
+		 ↓
+		Already processed
+		 ↓
+		Return previous result
+	No second payment.
+
+	Idempotency Flow
+	             Request
+	                ↓
+	          Idempotency Key
+	                ↓
+	          Check DB/Store
+	                ↓
+	       Already processed?
+	          ↙           ↘
+	        YES            NO
+	         ↓              ↓
+	 Return existing      Process
+	    result               ↓
+	                       Save result
+	                          ↓
+	                    Return result
+
+13. Where Store Idempotency?
+	Possible options:
+		PostgreSQL
+		Redis
+		Dedicated idempotency store
+	
+	For critical financial operations, a durable database-backed design is often preferable 
+	because the idempotency record needs durable business semantics.
+	Example:
+		payment_requests
+			idempotency_key UNIQUE
+			payment_id
+			status
+			response
+			created_at
+	The unique constraint is important.
+	
+	Two concurrent requests:
+				Request A → ABC123
+				Request B → ABC123
+	Both cannot create separate records if:
+	
+	UNIQUE(idempotency_key) is enforced correctly.
+
+14. Important Idempotency Edge Case
+	Suppose:
+		Request
+		   ↓
+		DB transaction
+		   ↓
+		Payment created
+		   ↓
+		Application crashes
+	The client retries.
+	
+	System must return the existing operation rather than creating another one.
+	That's why idempotency state needs to be tied to the transaction/business operation.
+
+15. Saga ⭐⭐⭐⭐⭐
+	The Saga Pattern is used in microservices to manage distributed transactions across multiple databases.
+	
+	In a monolithic system, ensuring that a series of actions succeed or fail together is easy 
+	because you can wrap everything in a single ACID database transaction. However, in a microservices 
+	architecture where each service owns its own private database, a traditional distributed 
+	transaction is too slow, heavily locks data, and introduces a single point of failure.
+	
+	The Saga Pattern solves this by breaking a single large transaction 
+	into a sequence of smaller, local transactions.
+
+	Saga is used when a business transaction spans multiple independently managed services 
+	and you cannot use one ACID transaction across all of them.
+	
+	Example:
+	Order Service → Payment Service → Inventory Service
+	Suppose:
+		Order       ✅
+		Payment     ✅
+		Inventory   ❌
+	You need to compensate the previous successful operations.
+		Inventory ❌
+		    ↓
+		Compensate Payment
+		    ↓
+		Refund
+		    ↓
+		Compensate Order
+		    ↓
+		Cancel Order
+
+16. Saga ≠ Database Rollback ⭐⭐⭐⭐⭐
+	This is one of the most important distinctions.
+	Traditional transaction:
+			BEGIN
+			A
+			B
+			C
+			ROLLBACK
+	Database can undo changes within the same transactional boundary.
+	
+	Saga:
+		Service A → COMMIT
+		Service B → COMMIT
+		Service C → FAIL
+	You cannot simply perform:
+			ROLLBACK A
+			ROLLBACK B
+	because they already committed independently.
+	
+	Instead, execute compensating business actions.
+	Example:
+		Payment completed
+		      ↓
+		Inventory failed
+		      ↓
+		Refund payment
+	The refund is a new business transaction, not a database rollback.
+
+17. Saga — Two Approaches ⭐⭐⭐⭐⭐
+	There are two major approaches:
+		1. Choreography
+		2. Orchestration
+	|                    | Choreography     | Orchestration       |
+	| ------------------ | ---------------- | ------------------- |
+	| Coordinator        | None             | Orchestrator        |
+	| Communication      | Events           | Commands/events     |
+	| Simple flows       | Good             | Good                |
+	| Complex flows      | Harder to manage | Easier to visualize |
+	| Central dependency | Lower            | Higher              |
+	| Debugging          | Can be difficult | Generally easier    |
+
+	For a small event-driven workflow  use choreography; 
+	for complex business workflows with many compensations, orchestration is often easier to manage
+
+18. Choreography
+	Services react to events.
+		Order Service → ORDER_CREATED → Inventory Service
+		 → INVENTORY_RESERVED → Payment Service → PAYMENT_COMPLETED
+	Each service decides what to do when it receives events.
+
+	Advantage: 
+		Less centralized coordination.
+	Disadvantage:
+		As the workflow grows: Service A ↔ B ↔ C ↔ D ↔ E
+		business flow becomes harder to understand.
+		This can create an event-driven "spaghetti" problem if not carefully designed.
+
+19. Orchestration
+	A central Saga Orchestrator coordinates the workflow.
+	              Saga Orchestrator
+	              /       |       \
+	             ↓        ↓        ↓
+	          Order    Inventory  Payment
+	Flow:
+			Orchestrator → Create Order → Reserve Inventory
+			 → Process Payment → Confirm Order
+	Failure:
+			Payment ❌
+			   ↓
+			Orchestrator
+			   ↓
+			Release Inventory
+			   ↓
+			Cancel Order
+	Advantage:
+		Centralized workflow and easier visibility.
+	Disadvantage:
+		Orchestrator adds complexity and can become overly central if poorly designed.
+
+20. Saga + Eventual Consistency ⭐⭐⭐⭐⭐
+	Saga usually means the system becomes temporarily inconsistent between steps.
+	
+	Example:
+		Order = CREATED
+		Inventory = RESERVED
+		Payment = PENDING
+	Later: 
+			Payment = SUCCESS
+				or
+			Payment = FAILED
+			Inventory = RELEASED
+			Order = CANCELLED
+	
+	Therefore Saga commonly introduces: Eventual consistency across services.
+
+21. Retry + Circuit Breaker + Idempotency + Saga
+	They solve different problems:
+	                    FAILURE
+	                       |
+	        ┌──────────────┼───────────────┐
+	        ↓              ↓               ↓
+	      Retry       Circuit Breaker   Idempotency
+	        |              |               |
+	  Temporary       Persistent        Duplicate
+	   failure          failure          request
+	
+	Saga solves another problem:
+		Multi-service business transaction
+		              ↓
+		          Saga
+		              ↓
+		       Compensation
+
+22. Complete Real-World Flow ⭐⭐⭐⭐⭐
+	Imagine an online payment:
+		Client → API Gateway → Payment Service → Validate → Idempotency Check 
+		→ Database Transaction → Outbox → Kafka → Payment Processor
+	
+	External processor fails:
+		Payment Processor → Timeout → Safe Retry? → YES → Exponential Backoff
+	
+	Repeated failure:
+		Circuit Breaker → OPEN → Fail Fast
+	
+	If this payment is part of a larger workflow:
+		Order → Payment → Inventory
+		
+	and Inventory fails: 
+		Saga → Refund Payment → Cancel Order
+	This is how the patterns work together.
+
+23. Spring Boot Mapping ⭐⭐⭐⭐⭐
+	For Java interviews, know the typical mapping:
+		Spring Boot
+		    ├── Resilience4j
+		    │      ├── Retry
+		    │      ├── Circuit Breaker
+		    │      └── TimeLimiter
+		    ├── PostgreSQL
+		    │      └── Idempotency
+		    ├── Kafka
+		    │      └── Saga / Events
+		    └── Redis
+		           └── Cache / Rate Limit / Temporary State
+	
+	Typical concepts:
+		@Retry
+		@CircuitBreaker
+	with Resilience4j-style configuration.
+	
+	For idempotency, prefer explicit application/database design rather 
+	than assuming an annotation solves the business problem.
+
+24. Bulkhead Pattern ⭐⭐⭐⭐
+	Imagine:
+		Service
+		 ├── Payment calls
+		 ├── Notification calls
+		 └── Reporting calls
+	
+	Notification provider becomes slow.
+	If all requests share the same thread/connection resources:
+		Notification traffic
+		        ↓
+		Consumes resources
+		        ↓
+		Payment requests affected
+	
+	Bulkhead isolates resources:
+		Service
+		 ├── Payment Pool
+		 ├── Notification Pool
+		 └── Reporting Pool
+		 
+	If notification fails:
+		Notification ❌
+		Payment ✅
+
+25. Timeout ⭐⭐⭐⭐⭐
+	Add timeout to every remote call where appropriate.
+	
+	Without timeout:
+		Service B hangs → Service A waits → Thread occupied
+		 → Connections occupied → More requests → Resource exhaustion
+	
+	With timeout:
+		Service B → No response → Timeout → Release resources
+	
+	Timeout is often the first line of defense before retry/circuit-breaking.
+
+

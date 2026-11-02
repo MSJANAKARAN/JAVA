@@ -1,0 +1,196 @@
+                 SYSTEM DESIGN
+                       │
+       ┌───────────────┼────────────────┐
+       │               │                │
+   SCALABILITY     RELIABILITY     CONSISTENCY
+       │               │                │
+ Load Balancer       Retry             ACID
+ Cache               Timeout           Locks
+ Sharding            Circuit Breaker   Saga
+ Replication         DLQ               Idempotency
+       │               │                │
+       └───────────────┼────────────────┘
+                       │
+                EVENT DRIVEN
+                       │
+                    Kafka
+                       │
+              ┌────────┴────────┐
+              │                 │
+        Microservices       Async Jobs
+              │                 │
+       Payment/Order       Notification
+       
+"Design X"
+
+Answer in this order:
+
+1. Requirements
+	Functional requirements
+	Non-functional requirements
+	
+	Ask/establish:
+	
+	Users?
+	Requests/sec?
+	Read/write ratio?
+	Latency?
+	Availability?
+	Data retention?
+
+2. APIs
+	Example:
+		POST /orders
+		GET /orders/{id}
+		POST /payments
+
+3. High-Level Architecture
+	Draw:
+		Client
+		 ↓
+		Load Balancer
+		 ↓
+		API Gateway
+		 ↓
+		Services
+		 ↓
+		Cache
+		 ↓
+		Database
+
+4. Database Design
+	Explain:
+		Tables
+		Primary keys
+		Foreign keys
+		Indexes
+		Partition key
+
+5. Scaling
+
+	Ask:
+	"What happens when traffic becomes 10×?"
+	
+	Then explain:
+		Horizontal scaling
+		Load balancing
+		Caching
+		DB replication
+		Sharding
+		Kafka
+
+6. Reliability
+	Explain:
+		Timeout
+		Retry
+		Circuit breaker
+		Idempotency
+		DLQ
+		Failover
+
+7. Consistency
+	Explicitly say:
+		"Which operations require strong consistency and which can tolerate eventual consistency?"
+	
+	This single discussion often makes an HLD answer much stronger.
+
+8. Bottlenecks
+	Say:
+	Potential bottlenecks:
+		- Database
+		- Cache
+		- Kafka
+		- Network
+		- Hot partition
+	
+	Then propose solutions.
+
+9. Trade-offs
+Always finish with:
+	Option A → advantage / disadvantage
+	Option B → advantage / disadvantage
+
+Interviewers care about why you chose the architecture, not just whether you can draw boxes.
+
+
+
+Functional Requirements (FRs):
+	Functional requirements describe the specific features, behaviors, and core capabilities of the system. 
+	They are directly tied to user actions and business logic. 
+	If a functional requirement is missing, the application cannot perform its intended job.
+	
+	Examples across different systems:
+	E-commerce Platform: 
+		A user must be able to add an item to a shopping cart, apply a coupon code, and checkout.
+	URL Shortener: 
+		A user must be able to input a long URL and receive a shortened alias link. 
+		When a visitor clicks that alias, they must be redirected to the original long URL.
+	Chat Application: 
+		A user must be able to send real-time text messages and media files to friends, and create group chats.
+
+Non-Functional Requirements (NFRs):
+	Non-functional requirements specify the operational criteria, constraints, and quality attributes of the system. 
+	They do not change the core features of the app, but they dictate whether the system can scale, 
+	stay secure, and remain reliable under heavy real-world traffic.
+
+	The Core "A-L-S-H-E" Pillars of NFRs:
+	Availability: 
+		What percentage of time must the system be up and running? 
+		(e.g., "The system must achieve 99.99% (four nines) availability").
+	Latency: 
+		How fast must the system respond? 
+		(e.g., "The p99 latency for fetching a user timeline must be under 100 milliseconds").
+	Scalability: 
+		How will the system grow? 
+		(e.g., "The system must handle an average of 50,000 read requests per second (RPS) 
+		and scale automatically during sudden traffic spikes").
+	Reliability / Consistency: 
+		Can we trust the data? 
+		(e.g., "The system must guarantee Exactly-Once semantics for payments, 
+		while accepting Eventual Consistency for social media likes").
+	Data Retention & Durability: 
+		How long is data stored? 
+		(e.g., "Financial logs must be retained for 7 years in cold storage; active logs must be kept for 30 days").
+
+The 6 Core Trade-offs in System Design:
+	1. Latency vs. Throughput (The Performance Trade-off)
+	2. Consistency vs. Availability (The CAP Theorem Trade-off)
+	3. Read Optimization vs. Write Optimization (The Database Trade-off)
+	4. Relational (SQL) vs. Non-Relational (NoSQL) (The Data Model Trade-off)
+	5. Cache Hit Rate vs. Data Staleness (The Memory Trade-off)
+	6. Microservices vs. Monolith (The Operational Trade-off)
+
+CDN (Content Delivery Network):
+	It is a globally distributed network of proxy servers and data centers deployed across the internet to deliver 
+	web content (like images, videos, HTML pages, and API responses) to users with maximum speed and minimum latency.
+
+	WITHOUT A CDN (High Latency):
+	[ User in Mumbai ] ─────── (Data travels 12,000 km across oceans) ───────► [ Origin Server in NY ]
+	▲                                                                             │
+	└─────────────────── (Response takes 200ms+ round-trip) ──────────────────────┘
+
+	WITH A CDN (Ultra-Low Latency):
+	[ User in Mumbai ] ──► [ CDN Edge Server in Mumbai (Cache Hit) ] ──► (Loads instantly in < 15ms)
+									│
+						[ Origin Server in NY ] (Left untouched and unburdened)
+
+Throttling
+	Throttling is a server-side traffic management strategy that limits the number of requests 
+	a user, device, or API key can make within a specific timeframe.
+
+	Rate limiting => Defines maximum request rate. (100/min)
+	Throttling => Broader concept of controlling/reducing traffic.
+
+	For interviews:
+		"Rate limiting is one mechanism for throttling traffic."
+
+
+
+
+
+
+
+
+
+
+

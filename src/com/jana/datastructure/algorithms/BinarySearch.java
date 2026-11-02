@@ -62,6 +62,12 @@ public class BinarySearch {
 			if (arr[mid] == target) {
 				return mid;
 			}
+			 // EDGE CASE FIX: If left, mid, right are duplicates, 
+            // we cannot determine which half is sorted. Shrink the bounds.
+            if (arr[left] == arr[mid] ) {
+                left++;
+                continue;
+            }
 //			if the left half is sorted Otherwise, the right half must be sorted
 			if (arr[left] <= arr[mid]) {
 				if (arr[left] <= target && target < arr[mid]) {

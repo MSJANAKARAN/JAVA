@@ -1,0 +1,196 @@
+Design a banking system that supports:
+    Customer accounts
+    Account balance
+    Money transfer between accounts
+    Transaction history
+    Deposit/withdrawal
+    Beneficiary management
+    Transfer status
+    Notifications
+    Failure recovery
+    Audit and reconciliation
+
+Example:
+    Alice Account                    Bob Account
+    ₹10,000                          ₹5,000
+
+            Transfer ₹2,000
+                ↓
+    Alice Account                    Bob Account
+    ₹8,000                           ₹7,000
+
+The critical requirement is:
+        Alice - ₹2,000
+        Bob   + ₹2,000
+
+Both sides must be accounted for correctly.
+
+2. Functional Requirements
+
+For an interview, define the scope first.
+
+Core
+    Create bank account
+    View account balance
+    Transfer money
+    Deposit money
+    Withdraw money
+    View transaction history
+    Add/remove beneficiary
+    Check transfer status
+Supporting
+    Notifications
+    Audit logs
+    Reconciliation
+    Fraud/risk checks
+    Scheduled transfers
+    Transaction limits
+
+For the HLD, I would focus on:
+
+Account management + money transfer + ledger + idempotency + concurrency + failure recovery.
+
+Non-Functional Requirements
+    Strong consistency	⭐⭐⭐⭐⭐
+    ACID transactions	⭐⭐⭐⭐⭐
+    Durability	⭐⭐⭐⭐⭐
+    Idempotency	⭐⭐⭐⭐⭐
+    High availability	⭐⭐⭐⭐
+    Security	⭐⭐⭐⭐⭐
+    Auditability	⭐⭐⭐⭐⭐
+    Scalability	⭐⭐⭐⭐
+    Low latency	⭐⭐⭐
+Notice that consistency is more important than extreme low latency.
+For example: Wrong balance is much worse than: Transfer takes 500ms instead of 100ms
+
+Architecture:
+                              CLIENT
+                                |
+                                ▼
+                         ┌─────────────┐
+                         │ API Gateway │
+                         └──────┬──────┘
+                                |
+                                ▼
+                    ┌──────────────────────┐
+                    │   Transfer Service   │
+                    └──────────┬───────────┘
+                               |
+             ┌─────────────────┼──────────────────┐
+             │                 │                  │
+             ▼                 ▼                  ▼
+       Account Service    Fraud/Risk         Idempotency
+             |                 |                  |
+             ▼                 ▼                  ▼
+         Account DB         Risk DB             Redis
+             |
+             ▼
+       ┌───────────────┐
+       │ Ledger Service│
+       └───────┬───────┘
+               |
+               ▼
+          Ledger DB
+               |
+               ▼
+          Outbox Table
+               |
+               ▼
+             Kafka
+               |
+       ┌───────┼─────────┐
+       ▼       ▼         ▼
+ Notification Order   Analytics
+    Service   Service
+
+               External Transfer
+                       |
+                       ▼
+                Payment Network
+                       |
+                       ▼
+                   Other Bank
+                       |
+                ┌──────┴──────┐
+                ▼             ▼
+             Response       Settlement
+                |             |
+                └──────┬──────┘
+                       ▼
+                 Reconciliation
+
+Interview Explanation:
+    I would design the banking transfer system around five major concerns: 
+    strong consistency, double-entry accounting, idempotency, concurrency control, and failure recovery.
+
+    The main components would be an API Gateway, Account Service, Transfer Service, Ledger Service, 
+    PostgreSQL, Redis, Kafka, Fraud/Risk Service and a Reconciliation Service.
+
+    The client would call POST /transfers with the source account, destination account, amount, currency 
+    and an idempotency key. The API Gateway handles authentication, rate limiting and routing. 
+    The Transfer Service validates the request, verifies that the source account belongs to the 
+    authenticated customer, checks limits and performs any required fraud checks.
+
+    Idempotency is critical because the client can retry a request when the network fails. 
+    I would store the idempotency key with a unique database constraint. 
+    If the same key is received again, the system returns the existing transfer instead of creating another transfer.
+
+    For an internal transfer where both accounts belong to the same transactional boundary, 
+    I would use a database transaction. The system locks the source and destination account rows, 
+    checks the available balance, debits the source account, credits the destination account and creates 
+    the corresponding ledger entries. All of these operations commit together, or the transaction rolls back.
+
+    For concurrency, I would use pessimistic row locking for critical balance updates when correctness 
+    is more important than throughput. Optimistic locking with a version column is another option 
+    when conflicts are relatively rare. To reduce deadlocks, accounts should be locked in a deterministic order, 
+    such as sorted account ID order.
+
+    I would maintain a double-entry ledger. For a ₹2,000 transfer from A to B, 
+    the ledger contains a ₹2,000 debit for A and a ₹2,000 credit for B. This provides an accounting invariant 
+    that total debits equal total credits and gives us an auditable financial history.
+
+    I would use PostgreSQL as the authoritative source for account and financial state because we need 
+    ACID transactions, durability and strong consistency. Redis can be used for caching, rate limiting or 
+    frequently accessed non-authoritative data, but it should not be the source of truth for balances.
+
+    Kafka would be used for asynchronous events such as TransferCompleted, TransferFailed and TransferReversed. 
+    I would not make Kafka part of the critical database transaction. To avoid the dual-write problem, 
+    I would use the Transactional Outbox pattern, storing the financial update and the 
+    outbox event in the same database transaction and publishing the event asynchronously.
+
+    For transfers between different banks or independent services, we cannot rely on a single database transaction. 
+    I would use a durable transfer state machine with states such as CREATED, PROCESSING, COMPLETED, FAILED 
+    and potentially UNKNOWN. External network calls can timeout after the remote bank has already 
+    processed the transaction, so a timeout must not automatically be treated as failure.
+
+    External transfers would therefore use acknowledgements, safe retries, reversals where supported, and reconciliation. 
+    A reconciliation service periodically compares our internal records with 
+    external settlement or transaction records and identifies mismatches.
+
+    The services should be stateless so they can scale horizontally behind a load balancer. PostgreSQL can use 
+    replication and, at very large scale, partitioning or carefully designed sharding. However, 
+    sharding introduces additional complexity because source and destination accounts may reside on different shards, 
+    so transactional boundaries must be designed carefully.
+
+    For security, I would use TLS, strong authentication and authorization, encryption, fraud detection, rate limiting 
+    and immutable audit records. Monetary values would use BigDecimal in Java and an appropriate DECIMAL 
+    type in the database rather than floating-point types.
+
+    Finally, I would monitor transfer success/failure rates, transaction latency, database lock contention, 
+    insufficient-funds failures, reconciliation mismatches, Kafka lag and external-bank failures.
+
+    The key principle is that a banking system should never rely on a single API response to determine financial truth. 
+    It should maintain durable state, double-entry ledger records, concurrency control, idempotency and 
+    reconciliation so that even failures and retries cannot silently create or lose money.
+    
+
+
+
+
+
+
+
+
+
+
+

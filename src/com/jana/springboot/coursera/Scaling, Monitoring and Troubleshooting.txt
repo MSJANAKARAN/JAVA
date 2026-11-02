@@ -1,0 +1,195 @@
+Securing REST APIs with Spring Security & JWT
+	Prevents unauthorized data access, protects sensitive info, and ensures stateless authentication with compliance to security standards.
+	
+	Stateless authentication, Role-Based Access Control (RBAC) (e.g., Admin vs. User), and method-level security annotations (such as @PreAuthorize). 
+	Note that CSRF protection can be safely disabled for purely stateless APIs.
+
+Implementing OAuth2 & JWT
+	• OAuth2 Overview: 
+		An open standard for delegated authorization that allows third-party apps limited access via tokens without sharing user credentials. 
+		Common flows include Authorization Code, Client Credentials, Implicit, and Password.
+		
+	• Token Integration: 
+		OAuth2 relies on JWTs as access tokens. Integration involves configuring an authorization server (e.g., AWS Cognito, Auth0) to issue tokens, 
+		validating signatures on the API resource server, and managing token expiration and refresh cycles.
+		
+	• Benefits: 
+		Offers highly scalable and stateless session management while enabling Single Sign-On (SSO).
+
+HTTPS Deployment with Let's Encrypt
+	• Why HTTPS: Encrypts client-server data to block eavesdropping and Man-in-the-Middle (MITM) attacks, builds user trust via the browser padlock, and improves SEO rankings.
+	
+	• Let's Encrypt: A free, open, and automated Certificate Authority (CA) that issues domain-validated SSL/TLS certificates using the ACME protocol.
+	
+	• Lifecycle & Automation:
+		• Certificates are only valid for 90 days.
+	
+		• Setup requires installing an ACME client (like Certbot) to verify domain ownership and handle automated renewals before expiration via cron jobs or systemd timers.
+	
+	• Hardening: Best practices include forcing HTTP-to-HTTPS redirection, implementing strong TLS ciphers, and adding the HSTS (HTTP Strict Transport Security) header.
+
+Safe Management of API Keys & Credentials
+	• The Risk: 
+		Hardcoding keys in code repositories, storing credentials in unsecured locations, or neglecting regular key rotations leads to financial loss and massive data breaches.
+	
+	• Key Strategies:
+		• Never embed credentials in source code or container images; map them via environment variables or central configuration.
+	
+		• Leverage production-ready secret management tools like AWS Secrets Manager, HashiCorp Vault, or Kubernetes Secrets.
+	
+		• Encrypt credentials both at rest and in transit.
+
+https://docs.spring.io/spring-security/reference/index.html
+https://docs.spring.io/spring-security/reference/servlet/oauth2/
+https://letsencrypt.org/getting-started/
+https://12factor.net/config
+
+
+Application Monitoring with Spring Boot Actuator
+	Provides built-in production-ready endpoints to monitor, gather metrics, and check the health status of a Spring Boot application with minimal setup.
+
+	• Key Endpoints:
+		• /actuator/health: Displays application health and uptime status.
+
+		• /actuator/metrics: Exposes performance metrics (CPU, memory, traffic).
+
+		• /actuator/env: Exposes active environment properties and configuration variables.
+
+		• /actuator/loggers: Allows inspection and dynamic configuration of application log levels.
+
+		• /actuator/threaddump: Generates a snapshot of all active thread states.
+
+	• Production Best Practices: Add the Actuator dependency (pom.xml or build.gradle), explicitly enable required endpoints via application properties, 
+		restrict sensitive endpoints using Spring Security (RBAC), and enforce HTTPS.
+
+	• Data Visualization: Export metrics to Prometheus via Micrometer to build real-time Grafana dashboards, or integrate directly with APM tools like New Relic and Datadog.
+
+Centralized Logging Strategies
+	Aggregates logs from distributed cloud-native microservices into a single location. 
+	This eliminates manual log inspection across individual servers, speeds up root cause analysis, and simplifies debugging.
+
+	• Architectural Components: Log Shippers (collect/forward) → Log Processors (parse/enrich) → Log Storage (retention) → Log Viewers (visualization).
+	
+	• Popular Tooling Stacks:
+		• ELK Stack: Elasticsearch, Logstash, Kibana.
+		• EFK Stack: Elasticsearch, Fluentd, Kibana.
+		• PLG Stack: Grafana Loki with Promtail.
+		• Cloud Native: AWS CloudWatch Logs or GCP Cloud Logging.
+	
+	• Effective Logging Tips: 
+		Always use structured logging (like JSON) for automated parsing, include contextual metadata, set appropriate log levels (INFO, DEBUG, ERROR), 
+		implement log rotation/archiving, and strictly avoid logging sensitive data.
+
+Integration with AWS CloudWatch
+	A fully managed AWS monitoring and observability service that tracks resource utilization, collects performance logs, and triggers automated alerts.
+
+	• Monitored Metrics: Aggregates core infrastructure health (CPU usage, memory allocation, disk space) along with custom application-level metrics.
+	
+	• Integration Steps: 
+		Install the AWS SDK → Configure app log routing to AWS Logs → Publish custom metrics using the CloudWatch API → Build visual dashboards and link AWS X-Ray for distributed tracing.
+
+https://docs.spring.io/spring-boot/docs/current/reference/html/actuator.html
+https://www.elastic.co/elastic-stack/
+https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/WhatIsCloudWatch.html
+
+
+Diagnosing Docker & ECS Deployments
+	• Container Failures: 
+		Common issues include containers failing to start (fix by checking the Dockerfile entrypoint and logs), networking issues (inspect exposed ports), 
+		file permission bugs, and Out-of-Memory (OOM) errors (resolved by adjusting memory limits).
+
+	• ECS Deployment Issues:
+		• If an ECS task fails to start, validate the Task Definition configuration, network routes, and IAM Execution Roles.
+
+		• If a service repeatedly restarts, immediately examine AWS CloudWatch logs and the ECS task events panel.
+
+		• If health checks fail, check the application's readiness endpoint logic and the Application Load Balancer (ALB) listener routing.
+
+	• Core Diagnosis Tools: 
+		Use the Docker CLI locally (docker inspect, docker stats), the AWS CLI (aws ecs describe-tasks), and AWS X-Ray to trace distributed microservice request flows.
+
+Deep-Dive with Docker Logs & Interactive Execution
+	• Passive vs. Active Diagnostics: 
+		Always review passive diagnostic data using docker logs <container-id> first before attempting invasive debugging.
+	
+	• Interactive Container Shells: 
+		Use docker exec -it <container-id> sh (or bash) to securely drop into an active container shell to inspect environment variables, look at internal files, 
+		or run diagnostic network commands like curl, top, or ping.
+	
+	• Production Security: 
+		Only use interactive execution on trusted containers. For smoother troubleshooting, ensure standard networking utilities are baked into your base container images.
+
+Debugging Application Performance & Startup Bottlenecks
+	• Impact of Slow Startups: 
+		Delays during application initialization block rapid cloud auto-scaling, increase container cold-start times, and can cause cascading service instability or container restarts.
+	
+	• Common Spring Boot Bottlenecks: 
+		Heavy classpath scanning, massive dependency injection trees, blocking I/O calls during startup, waiting on external database connections, and slow JVM warm-up cycles.
+	
+	• Profiling & Tuning Tools: 
+		Track individual startup step durations using Spring Boot Actuator, enable JVM garbage collection logging (-XX:+PrintGCDetails), profile with VisualVM or Java Flight Recorder (JFR), 
+		and track resource throttling via docker stats.
+	
+	• Performance Optimization Strategies:
+		• Implement Lazy Initialization for non-critical components using the @Lazy annotation.
+	
+		• Minimize processing logic inside initialization hooks like @PostConstruct.
+	
+		• Optimize the dependency graph, cut out unnecessary auto-wiring, and use lightweight base container images to reduce the overall memory footprint.
+	
+		• Leverage Spring 3 AOT (Ahead-of-Time) compilation for faster, cloud-native readiness.
+	
+	• Tracking Progress: Enable spring.metrics.startup to accurately measure the precise execution duration of individual bean initializations and contrast cold vs. warm container starts.
+
+https://docs.aws.amazon.com/AmazonECS/latest/developerguide/troubleshooting.html
+https://docs.docker.com/reference/cli/docker/container/logs/
+https://docs.docker.com/engine/reference/commandline/exec/
+https://docs.spring.io/spring-boot/docs/current/reference/html/features.html#features.spring-application.startup-tracking
+
+
+Horizontal vs. Vertical Scaling
+	Vertical Scaling (Scaling Up): 
+		Adds more power (CPU, RAM) to a single existing server. It is simple to implement and works well as a quick fix for development or staging environments, 
+		but it has strict hardware limits and introduces a Single Point of Failure (SPOF).
+	Horizontal Scaling (Scaling Out): 
+		Adds more instances or machines to the system. It builds in redundancy, offers nearly infinite scalability limits in cloud environments, 
+		and provides excellent cost flexibility, though it requires more architectural orchestration.
+
+	Feature            Vertical Scaling (Scaling Up)              Horizontal Scaling (Scaling Out)
+	Core Method        Upgrades CPU/RAM on one instance           Adds more instances/machines
+	Availability       Lower (Risk of Single Point of Failure)    Higher (Built-in redundancy)
+	Scalability Limit  Hard hardware caps                         Nearly infinite (Cloud-driven)
+	Complexity         Low (Easy to implement)                    High (Requires container orchestration)
+	Best Used For      Dev/Staging environments, simple apps      Production systems, high-traffic microservices
+
+ AWS ECS Auto Scaling Workflows
+	Dynamically adjusts the number of running ECS task instances based on real-time infrastructure demand (CPU, memory) or custom CloudWatch metrics to maintain performance 
+	during traffic spikes and reduce costs during low usage.
+
+	Scaling Policies:
+		• Target Tracking: Automatically adds/removes tasks to maintain a specific metric target (e.g., keeping average CPU usage at 60%). Recommended for simple and adaptive setups.
+		
+		• Step Scaling: Triggers distinct, step-based capacity changes when a metric crosses defined thresholds.
+		
+		• Scheduled Scaling: Increases or decreases the task count at preset, fixed times.
+	
+Application Load Balancer (ALB) Deep Dive
+	An AWS Layer 7 (Application Layer) load balancer that routes incoming traffic dynamically based on URL paths, hostnames, and headers. 
+	It is ideal for containerized microservice architectures.
+
+	Architectural Components:
+		• Listeners: The protocols and ports (e.g., port 80 or 443) that the ALB monitors for incoming client traffic.
+		
+		• Rules: The conditional logic that evaluates request headers or paths to determine where traffic goes.
+		
+		• Target Groups: The backend resource mappings (ECS tasks, EC2 instances, or Lambda functions) where requests are ultimately routed.
+		
+		• Health Checks: Periodic checks that verify target availability so the ALB can automatically steer traffic away from unhealthy tasks.
+	
+	ECS Integration: 
+		Supports both AWS Fargate and EC2 launch types. It automatically discovers and registers new container tasks as they scale up, handles centralized SSL termination, 
+		and allows multiple distinct backend services to sit behind a single shared ALB via path-based routing.
+
+https://aws.amazon.com/autoscaling/
+https://docs.aws.amazon.com/AmazonECS/latest/developerguide/service-auto-scaling.html
+https://docs.aws.amazon.com/elasticloadbalancing/latest/application/introduction.html

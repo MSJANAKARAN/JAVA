@@ -1,0 +1,204 @@
+We need two major operations.
+Create short URL: POST /api/v1/urls
+
+Request:
+    {
+    "longUrl": "https://example.com/products/12345"
+    }
+
+Response:
+    {
+    "shortCode": "aB92x",
+    "shortUrl": "https://short.ly/aB92x"
+    }
+Redirect User accesses: GET https://short.ly/aB92x
+
+System returns:
+    HTTP 302
+    Location: https://example.com/products/12345
+
+So fundamentally:
+        Long URL
+        ↓
+        Short Code
+        ↓
+        Original URL
+
+1. USER SAVES URL:
+   [ Long URL ] ──► (Generates Auto-Increment ID: 485729) ──► Saved to Database
+                                │
+                        Converts ID 485729 to Base62
+                                │
+                                ▼
+                     Short Link: tiny.url/c3Nf
+
+2. VISITOR CLICKS LINK:
+   Visitor goes to tiny.url/c3Nf ──► Server decodes "c3Nf" back to ID 485729
+                                                 │
+                                     Looks up ID 485729 in DB
+                                                 │
+                                                 ▼
+                                     Redirects to [ Long URL ]
+
+Functional Requirements:
+    In an interview, start by clarifying requirements.
+
+    Must have
+        Create a short URL.
+        Redirect short URL to original URL.
+        Short code must be unique.
+        Original URL should be stored.
+        Support high read traffic.
+        Optionally support expiration.
+    Nice-to-have
+        Custom aliases
+        Analytics
+        Click count
+        User ownership
+        Authentication
+        QR code
+    For a basic HLD, don't unnecessarily design all of these.
+
+Non-Functional Requirements:
+    This is where HLD starts becoming interesting.
+    We want:
+    High availability
+        Redirect should work almost all the time.
+
+    Low latency
+        Redirect should ideally be very fast.
+
+        GET short URL
+            ↓
+        Redis
+            ↓
+        Original URL
+    Scalability
+        System should support millions/billions of URLs.
+
+    Durability
+        Once a URL is created, we shouldn't lose the mapping.
+        Read-heavy workload
+        This is extremely important.
+
+    Suppose:
+        Create URL = 1 request
+        Redirect = 100 requests
+        or:
+        Write : Read
+        1    : 100
+
+    Therefore, we optimize heavily for reads.
+
+Architecture:
+                              ┌──────────────┐
+                              │    Client    │
+                              └──────┬───────┘
+                                     │
+                                     ▼
+                              ┌──────────────┐
+                              │ Load Balancer│
+                              └──────┬───────┘
+                                     │
+                       ┌─────────────┼─────────────┐
+                       │             │             │
+                       ▼             ▼             ▼
+                    API 1         API 2          API 3
+                       │             │             │
+                       └─────────────┼─────────────┘
+                                     │
+                          ┌──────────▼──────────┐
+                          │ URL Shortener       │
+                          │ Spring Boot Service │
+                          └──────────┬──────────┘
+                                     │
+                      ┌──────────────┼──────────────┐
+                      │                             │
+                      ▼                             ▼
+                  ┌───────┐                    ┌──────────┐
+                  │ Redis │                    │ Database │
+                  │ Cache │                    │ Cluster  │
+                  └───────┘                    └────┬─────┘
+                                                     │
+                                                     ▼
+                                                 Replicas
+
+                     Redirect / Analytics
+                              │
+                              ▼
+                           Kafka
+                              │
+                              ▼
+                       Analytics Service
+                              │
+                              ▼
+                       Analytics Store
+
+Interview Explanation:
+    I would design the URL shortener as a highly available, read-heavy distributed system.
+
+    The main functional requirements are creating a short URL from a long URL and redirecting a short URL to the original URL. 
+    Non-functional requirements are low latency, high availability, scalability and durability.
+
+    At a high level, clients connect through a load balancer to stateless Spring Boot application servers. 
+    For persistence, I would use PostgreSQL, and Redis as a caching layer because redirects are expected to be much more frequent than URL creation.
+
+    For URL creation, the client sends the long URL to the API. 
+    The service validates it, generates a unique numeric ID and converts that ID to a 
+    Base62 representation containing 0–9, A–Z and a–z. This Base62 value becomes the short code. 
+    We store the mapping between short code and long URL in PostgreSQL with a unique constraint on short_code.
+
+    For example:
+        ID → Base62 → aB92x
+        and the database stores:
+        aB92x → https://example.com/products/123
+
+    For a redirect request, such as GET /aB92x, the application first checks Redis. 
+    If the value is present, we immediately return the original URL. If there is a cache miss, 
+    we query PostgreSQL, populate Redis and then return the redirect. This is the cache-aside pattern.
+
+    The database remains the source of truth, so if Redis fails, the application can fall back to PostgreSQL. 
+    Redis improves latency and protects the database from the large read volume.
+
+    For scalability, the application servers are stateless and can be horizontally scaled behind the load balancer. 
+    Redis can be clustered or replicated, and the database can use read replicas. If the system becomes extremely large, 
+    we can shard the database based on the short-code or underlying ID.
+
+    For analytics such as click counts, I would avoid synchronously updating the database on every redirect. 
+    Instead, the redirect service can publish an event to Kafka asynchronously, 
+    and an analytics consumer can process those events separately. 
+    This keeps the redirect path low latency and allows analytics to be eventually consistent.
+
+    For reliability, I would consider database replication, failover, Redis fallback, 
+    timeouts and appropriate retry mechanisms. For URL creation APIs, 
+    idempotency keys can also prevent duplicate creation when clients retry after network failures.
+
+    There are several trade-offs. ID plus Base62 is simple and guarantees uniqueness when the ID is unique, 
+    whereas random short codes provide less predictable URLs but require collision detection. 
+    Similarly, analytics can use eventual consistency, while the core URL mapping needs stronger correctness guarantees.
+
+    So the main architecture is:
+    Client → Load Balancer → Stateless Spring Boot Services → Redis → PostgreSQL,
+    with Kafka used asynchronously for analytics.
+
+                    URL SHORTENER
+                          │
+        ┌─────────────────┼─────────────────┐
+        ▼                 ▼                 ▼
+   BASIC DESIGN      SCALABILITY        RELIABILITY
+        │                 │                 │
+     APIs             Load Balancer      Replication
+     DB               Redis              Failover
+     Base62           Sharding           Retry
+     Redirect         CDN                Idempotency
+                      DB Replica
+        │
+        └──────────────────────────────────┐
+                                           ▼
+                                   DISTRIBUTED SYSTEMS
+                                           │
+                                     Kafka / Events
+                                     Consistency
+                                     CAP
+                                     Caching
+                                     Hot Keys

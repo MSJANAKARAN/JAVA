@@ -1,0 +1,182 @@
+Design a notification system that can send:
+    Push notifications
+    SMS
+    Email
+    In-app notifications
+
+Example:
+    Payment completed
+        ↓
+    Notification System
+        ↓
+    ┌─────┼──────┐
+    ▼     ▼      ▼
+    Push  SMS    Email
+
+Example banking scenario: ₹5,000 transferred successfully
+The user might receive:
+    Push → Transfer of ₹5,000 successful
+    SMS  → Your account was debited ₹5,000
+    Email → Transaction receipt
+
+Functional Requirements:
+    Core
+        Send notification
+        Support multiple channels
+        Select user preferences
+        Template notifications
+        Retry failed notifications
+        Track delivery status
+        Support scheduled notifications
+        Prevent duplicate notifications
+    Optional
+        Notification history
+        Bulk notifications
+        Priority notifications
+        Localization
+        Rich push notifications
+        User unsubscribe/preferences
+        Analytics
+        Provider failover
+
+    For the interview, say:
+        I'll focus on event-driven notification delivery across email, SMS, 
+        push and in-app channels, including reliability, retries and user preferences.
+
+Non-Functional Requirements:
+    | Requirement            | Importance |
+    | ---------------------- | ---------- |
+    | High availability      | ⭐⭐⭐⭐⭐      |
+    | Scalability            | ⭐⭐⭐⭐⭐      |
+    | Reliability            | ⭐⭐⭐⭐⭐      |
+    | Low latency            | ⭐⭐⭐⭐       |
+    | At-least-once delivery | ⭐⭐⭐⭐⭐      |
+    | Idempotency            | ⭐⭐⭐⭐⭐      |
+    | Fault tolerance        | ⭐⭐⭐⭐⭐      |
+    | Cost efficiency        | ⭐⭐⭐⭐       |
+    Notification delivery usually favors availability and eventual consistency rather than strong consistency.
+
+Architecture:
+                           ┌──────────────┐
+                           │   Services   │
+                           │ Payment/Auth │
+                           │ Transfer/etc │
+                           └───────┬──────┘
+                                   │
+                              Business Event
+                                   │
+                                   ▼
+                              ┌─────────┐
+                              │  Kafka  │
+                              └────┬────┘
+                                   │
+                                   ▼
+                         ┌──────────────────┐
+                         │ Notification     │
+                         │ Router           │
+                         └────────┬─────────┘
+                                  │
+                     ┌────────────┼────────────┐
+                     ▼            ▼            ▼
+                Preference     Template      User
+                  Service       Service      Service
+                     │            │
+                     └──────┬─────┘
+                            ▼
+                      Channel Topics
+                  ┌─────────┼─────────┐
+                  ▼         ▼         ▼
+               Email       SMS       Push
+               Worker     Worker     Worker
+                  │         │          │
+                  ▼         ▼          ▼
+              Provider   Provider   FCM/APNs
+                  │         │          │
+                  └─────────┼──────────┘
+                            ▼
+                    Notification DB
+
+                        Failed
+                          │
+                          ▼
+                         Retry
+                          │
+                          ▼
+                         DLQ
+
+Design Pattern:
+    | Pattern               | Usage                           |
+    | --------------------- | ------------------------------- |
+    | Observer/Event-driven | Business events                 |
+    | Strategy              | Notification channels/providers |
+    | Adapter               | External provider APIs          |
+    | Outbox                | Reliable event publishing       |
+    | Retry                 | Temporary failures              |
+    | Circuit Breaker       | Provider outage                 |
+    | Bulkhead              | Isolate channels                |
+    | Idempotent Consumer   | Duplicate events                |
+    | Priority Queue        | Important notifications         |
+    | Factory               | Select provider/channel         |
+
+Interview Explanation:
+I would design the notification system as an event-driven, asynchronous system 
+because notification delivery should not block the main business transaction.
+
+The major components would be Kafka, a Notification Router, 
+User Preference Service, Template Service, channel-specific workers for Email, SMS and Push, 
+a notification database, Redis for caching, and external notification providers.
+
+For example, when a payment is completed, the Payment Service publishes a PAYMENT_COMPLETED event. 
+I would use the Transactional Outbox pattern so the payment update and event creation are 
+committed reliably. An outbox publisher then sends the event to Kafka.
+
+The Notification Router consumes the event and determines the recipient, notification type, 
+applicable user preferences, template and required channels. It then publishes channel-specific 
+tasks to separate Kafka topics such as email, SMS and push.
+
+Separate workers consume these topics and communicate with external providers. 
+This separation allows each channel to scale independently and 
+prevents a failure in one provider from blocking other channels.
+
+I would maintain a notification state machine such as CREATED, QUEUED, PROCESSING, 
+SENT, DELIVERED, RETRYING and FAILED. SENT means the provider accepted the request, 
+while DELIVERED can represent confirmed delivery when the provider supports delivery status.
+
+The system should use at-least-once processing with idempotent consumers. 
+Kafka or network failures can result in duplicate delivery of an event, so I would store 
+an event ID or business-specific idempotency key and enforce uniqueness in the database.
+
+For transient provider failures such as timeouts, HTTP 5xx or rate limiting, 
+I would use exponential backoff with jitter. Permanent errors such as an invalid 
+email address should not be retried. After a configurable number of attempts, 
+the message moves to a Dead Letter Queue for investigation or replay.
+
+Provider timeouts require special care because the provider may have accepted the notification 
+even though our request timed out. Therefore, where the provider supports idempotency keys 
+or status APIs, I would use them before retrying. I would not blindly retry every timeout.
+
+I would also use circuit breakers to stop calling an unhealthy provider and 
+bulkheads to isolate Email, SMS and Push worker pools. If one channel becomes slow, 
+it should not exhaust the resources of the other channels.
+
+User preferences would determine whether a notification should be sent through a particular channel. 
+Transactional notifications such as OTP or fraud alerts may have different rules from promotional notifications.
+
+For push notifications, I would maintain device tokens and support multiple devices per user. 
+For in-app notifications, I would store notification records and expose a paginated API. 
+WebSockets or Server-Sent Events can be used when real-time in-app delivery is required.
+
+Kafka provides buffering and backpressure. If the system suddenly receives millions of notifications, 
+producers can continue publishing while workers process messages according to provider limits. 
+Kafka partitions and horizontally scaled consumers provide parallel processing.
+
+PostgreSQL can store notification metadata and delivery status initially. 
+Redis can cache preferences, templates and rate-limiting information. At very large scale, 
+notification history can be partitioned or moved to a distributed NoSQL store if access patterns justify it.
+
+Finally, I would monitor notification throughput, success/failure rates, provider latency, retry counts, 
+Kafka consumer lag, DLQ size and channel-specific delivery rates.
+
+The key design principle is: business services publish events, Kafka provides durable asynchronous buffering, 
+channel workers deliver independently, and retries plus idempotency make delivery reliable.
+

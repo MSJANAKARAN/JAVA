@@ -1,0 +1,258 @@
+| Concept          | Purpose                           |
+| ---------------- | --------------------------------- |
+| Cache            | Reduce DB latency/load            |
+| TTL              | Automatically expire data         |
+| Eviction         | Remove data under memory pressure |
+| Atomic operation | Safe concurrent counters/updates  |
+| Distributed lock | Coordinate work across nodes      |
+| Rate limiting    | Shared request limits             |
+| Session          | Shared session state              |
+
+1. What is Redis? ⭐⭐⭐⭐⭐
+	Redis is an in-memory data store commonly used for:
+		Cache
+		Session
+		Rate limiting
+		Distributed locks
+		Counters
+		Temporary data
+		Pub/Sub
+	Basic idea: Application -> Redis -> Database
+	
+	Redis is extremely fast because frequently accessed data is kept in memory.
+	But Redis should not automatically be treated as the source of truth.
+
+2. Cache ⭐⭐⭐⭐⭐
+	Suppose: GET /users/101
+	Without Redis:
+		Client
+		  ↓
+		Application
+		  ↓
+		PostgreSQL
+		  ↓
+		Response
+	Every request hits the database
+	
+	With Redis:
+		Client
+		  ↓
+		Application
+		  ↓
+		Redis
+		  ↓
+		Cache HIT → Response
+	Database load decreases significantly.
+
+3. Cache-Aside Pattern ⭐⭐⭐⭐⭐
+	This is the most important caching pattern for interviews.
+	Read
+			Application
+			     ↓
+			Check Redis
+			     ↓
+			 ┌───┴────┐
+			Hit      Miss
+			 ↓         ↓
+			Return    DB
+			           ↓
+			         Redis
+			           ↓
+			         Return
+	Pseudo-code:
+		User user = redis.get(key);
+		if (user == null) {
+		    user = database.findUser(id);
+		    redis.set(key, user);
+		}
+		return user;
+	
+	Write
+		Typically: Application -> Database UPDATE -> Redis DELETE/UPDATE
+		Deleting the cache after a successful DB update is a common approach.
+
+4. TTL (Time To Live) ⭐⭐⭐⭐⭐
+	Why use TTL?
+		Prevents stale data living forever
+		Prevents unlimited cache growth
+		Automatically removes temporary data
+	Example: 
+		SET user:101 "John" 
+		EXPIRE user:101 300
+	The key expires after: 300 seconds
+	
+	Examples:
+		OTP       → few minutes
+		Session   → hours
+		Product   → minutes
+		Exchange quote cache → very short TTL
+
+5. Cache Eviction ⭐⭐⭐⭐
+	What happens when Redis memory is full?
+		Redis can use eviction policies depending on configuration.
+	
+	Common concepts:
+		LRU
+		LFU
+		TTL-based eviction
+		No eviction
+	LRU = Least Recently Used.
+		Remove data that hasn't been accessed recently.
+	
+	LFU = Least Frequently Used.
+	Remove data that is accessed least frequently.
+	
+	Interview answer
+		TTL controls how long data remains valid; eviction controls what Redis removes when memory pressure occurs.
+
+6. Cache Problems ⭐⭐⭐⭐⭐
+	Caching introduces new problems.
+	Cache Miss: Redis ❌ -> DB
+	Cache Stampede: Suppose a popular key expires.
+		1000 requests
+		      ↓
+		Redis MISS
+		      ↓
+		1000 DB requests
+	Database suddenly gets overloaded.
+	
+	Solutions:
+		Lock
+		Request coalescing
+		Jittered TTL
+		Background refresh
+		Warm cache
+
+7. Cache Invalidation ⭐⭐⭐⭐⭐
+	Suppose DB: Balance = ₹1000
+	Redis: Balance = ₹1000
+	
+	Application updates DB: DB → ₹800 Redis → ₹1000 ❌
+	Now users see stale data.
+	
+	Common strategies:
+		TTL
+		Cache delete after DB update
+		Cache update after DB update
+		Event-driven invalidation
+		Write-through
+	For critical financial values, avoid blindly trusting stale cached balances.
+
+8. Redis Atomic Operations ⭐⭐⭐⭐⭐
+	Redis supports atomic commands.
+	Example: INCR counter
+		Multiple clients can safely increment the same counter without application-level read-modify-write races.
+	
+	Useful for:
+		Counters
+		Rate limiting
+		Sequence numbers
+		Usage limits
+	
+	Example:
+		INCR login:attempts:user101
+		EXPIRE login:attempts:user101 60
+
+9. Redis Distributed Lock ⭐⭐⭐⭐⭐
+	Suppose multiple application servers process the same job:
+		Server 1 ─┐
+		Server 2 ─┼→ Same resource
+		Server 3 ─┘
+	
+	You want only one server to execute the critical section.
+	Conceptually: SET lock:payment:123 uniqueToken NX EX 30
+	
+	NX means: Only set if key doesn't exist
+	EX gives the lock a TTL(Time To Live).
+	
+	Then:
+		Server 1
+		   ↓
+		Gets lock
+		   ↓
+		Process
+		   ↓
+		Release lock
+	Others fail/wait/retry.
+	
+	A distributed lock needs careful handling of:
+		Lock expiry
+		Owner identity
+		Release safety
+		Process crashes
+		Network failures
+		Clock assumptions
+	For critical financial correctness, database constraints/transactions and domain-level 
+	idempotency are often more fundamental than a distributed lock.
+
+10. Rate Limiting with Redis ⭐⭐⭐⭐⭐
+
+	Suppose: 100 requests/minute/user
+	Key: rate:user:101
+	
+	Redis can maintain counters/tokens centrally:
+		Server 1 ─┐
+		Server 2 ─┼→ Redis
+		Server 3 ─┘
+	Therefore all servers share the same rate-limit state.
+	
+	For example:
+		100 requests
+		     ↓
+		Redis counter/token bucket
+		     ↓
+		101st request → 429
+	Atomic operations or Lua scripts are commonly used to make check-and-update operations safe.
+
+11. Redis Session
+	Instead of storing session state inside one application server:
+		Client
+		  ↓
+		Server 1
+		  ↓
+		Session ❌
+	
+	store it centrally:
+	             Redis
+	            /     \
+	           ↓       ↓
+	        Server 1 Server 2
+	
+	Now requests can go to any instance.
+	This supports horizontal scaling.
+	
+	For modern stateless JWT-based APIs, Redis may not be needed for the basic authentication state, 
+	but it can still be useful for token/session revocation, temporary state, rate limiting, etc.
+
+Native Atomic Redis Operations:
+	An atomic operation in Redis means that an operation runs as a single, uninterrupted unit of work. 
+	While it is executing, no other client can read or modify the data involved, completely eliminating race conditions.
+	INCR key: 
+		Increments a number by 1. If two clients call this simultaneously on a value of 10, 
+		Redis processes them one after the other. The final value will strictly be 12.
+	SET key value NX EX 3600: 
+		Sets a key only if it does not exist (NX) and expires it in an hour (EX). This single command
+		is widely used to build distributed locks because the check and the write happen atomically.
+
+The Power of Redis Lua Scripts:
+	Redis Lua scripts allow you to bundle complex logic—including conditional statements, 
+	reads, and writes—into a single custom atomic operation.
+
+	For example, if you want to "Read a value, check if it's greater than 5, and if so, 
+	deduct 2 and update a secondary key," running these as individual commands creates a 
+	race condition between the read and the write.
+
+	A Lua script solves this by running entirely on the Redis server. Redis guarantees that 
+	a Lua script executes as a single atomic block. While your script runs, 
+	Redis blocks all other incoming commands until the script finishes.
+
+	WITHOUT LUA (Race Condition Risk):
+		Client A: GET balance  ──► (Returns 10)
+		Client B: GET balance  ──► (Returns 10)
+		Client A: SET balance 5 ──► Success!
+		Client B: SET balance 8 ──► Success! (Overwrote Client A's transaction)
+
+	WITH LUA SCRIPT (Perfect Atomicity):
+		Client A: EVAL "script" ──► [ Redis Locks Entire Thread ] ──► Reads -> Validates -> Writes ──► [ Unlocks ]
+		Client B: GET balance   ──► Waits in queue until Client A's script finishes completely.
+

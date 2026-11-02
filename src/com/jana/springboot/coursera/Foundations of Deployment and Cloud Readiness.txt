@@ -1,0 +1,163 @@
+Traditional vs. Container-Based Deployment
+	• Traditional Deployment (Hardware/OS Bound):
+		• Applications run directly on physical or virtual machines (VMs) with tightly coupled hardware configurations.
+		
+		• Requires manual setup of operating systems and dependencies, using tool chains like shell scripts or configuration management software (Ansible, Puppet).
+		
+		• Best For: Legacy systems, heavy monolithic structures, and highly stable environments with low-frequency changes.
+	
+	• Container-Based Deployment (Agile & Portable):
+		• Packages applications along with their entire operating dependency stack into a single, isolated package using container runtimes like Docker.
+		
+		• Drastically reduces memory footprint, boots up faster, optimizes overall hardware resource utilization, and allows for seamless rollbacks and version control.
+		
+		• Best For: Modern microservices architectures, cloud-native applications, and high-frequency code release environments.
+
+The CI/CD Pipeline
+	• Continuous Integration (CI):
+		• Developers merge code updates into shared repositories frequently.
+		
+		• Every single push dynamically triggers automated compilation and testing cycles to isolate bugs early, improve code quality, and maintain branch stability.
+	
+	• Continuous Delivery (CD - Manual Trigger):
+		• Automatically prepares, builds, packages, and passes the updated codebase into staging environments.
+		
+		• The application is ready to go live at any time, but explicitly requires a manual stakeholder approval block to push changes into production.
+	
+	• Continuous Deployment (CD - Automated Release):
+		• Goes one step past delivery. Every single code commit that successfully passes the automated testing framework is instantly deployed to production without human intervention.
+		
+		• Ideal for high-velocity tech giants (like Amazon, Netflix, and Google) that push code hundreds of times per day.
+
+https://www.docker.com/resources/what-container
+https://www.redhat.com/en/topics/devops/what-is-ci-cd
+https://www.techtarget.com/searchsoftwarequality/CI-CD-pipelines-explained-Everything-you-need-to-know
+
+DevOps Engineering & The Application Lifecycle
+	• 1. Plan Phase: 
+		Collaborates on feature requirements, schedules user stories, and designs infrastructure needs early. 
+		(Tools: JIRA, Azure Boards)
+	
+	• 2. Develop Phase: 
+		Writes code, reviews syntax, and handles commits via Git branches. 
+		(Tools: Git, GitHub, GitLab)
+	
+	• 3. Build Phase: 
+		Automatically compiles and packages code (e.g., building a Spring Boot .jar via Maven) to ensure strict build repeatability. 
+		(Tools: Jenkins, Maven, Gradle)
+	
+	• 4. Test Phase: 
+		Implements "Shift-Left Testing" by integrating automated execution directly into the early pipeline stages. 
+		(Tools: Selenium, JUnit, Postman)
+	
+	• 5. Release & Deploy Phases: 
+		Automates packaging approvals, standardizes containerization models, and launches code into production with minimal downtime. 
+		(Tools: Docker, Kubernetes)
+	
+	• 6. Operate & Monitor Phases: 
+		Oversees live performance, dynamically maintains infrastructure scaling, and tracks application diagnostics. 
+		(Tools: Prometheus, Grafana)
+	
+	• 7. Feedback Phase: 
+		Leverages telemetry, log file monitoring, and system metrics to gather insights for continuous improvement and rapid recovery. 
+		(Tools: ELK Stack, Datadog)
+
+Configuration Externalization (Environment Variables)
+	Leverages OS-managed environment variables (formatted as key-value pairs) to load configuration inputs dynamically at runtime.
+	Bypasses hardcoded values for highly sensitive or environment-specific data, including database URLs, API keys, passwords, ports, and JWT tokens.
+	
+Environment Isolation (Spring Profiles)
+	Spring Profiles allow developers to segregate parts of the application configuration, making them available only in highly specific environments (e.g., dev, test, staging, prod).
+	
+• Risk Assessment Hierarchy:
+	• Hardcoding in Source Code: Extremely high security risk; strictly forbidden.
+	
+	• Storing in Configuration Files (application.properties): Medium risk; vulnerable if committed to public repositories.
+	
+	• OS Environment Variables: Highly secure; loads data definitions dynamically at runtime.
+	
+	• Dedicated Secret Managers: The ultimate production-grade security standard. • use centralized, encrypted cloud key stores such as HashiCorp Vault, AWS Secrets Manager, Azure Key Vault, 
+		or Google Secret Manager, which enforce access control through roles and strict policies.
+
+https://docs.spring.io/spring-boot/docs/current/reference/html/features.html#features.external-config
+https://docs.spring.io/spring-boot/docs/current/reference/html/features.html#features.profiles
+https://spring.io/guides/gs/spring-boot/
+
+Containerization Fundamentals 
+	Containers function as lightweight, portable, and completely self-sufficient execution bubbles containing an application and its entire operational dependency tree.
+	Containers completely bypass running a heavy internal guest OS. 
+	They map isolated runtime spaces by sharing the host operating system's kernel directly.
+
+
+	Feature             Virtual Machines (VMs)                             Containers
+	Operating System    Bundles a complete, heavy Guest OS per instance.   Shares the single host OS kernel dynamically.
+	Footprint Size      Large (measured heavily in Gigabytes).             Lightweight and small (measured in Megabytes).
+	Boot Speed Time     Slower initialization (takes minutes to spin up).  Ultra-fast initialization (boots in seconds).
+	Isolation Level     Hypervisor-level separation (extremely strong).    Process-level isolation (infrastructure-shared).
+
+	A standard container execution stack relies on four vital lifecycle blocks:
+		• Dockerfile: A text blueprint script containing line-by-line configuration instructions used to compile a clean application package.
+		
+		• Image: The read-only static blueprint artifact containing the compiled code, embedded libraries, and binary dependencies required to launch the application.
+		
+		• Container: The active, living, running instance of an image operating within its isolated process lane.
+		
+		• Registry: A centralized cloud or local repository hub utilized exclusively for storing, versioning, and distributing built container images.
+
+Core Elements of Docker Architecture
+	Docker is a containerization platform used to bundle software applications alongside their complete dependency stacks to ensure runtime consistency across Development, 
+	Testing, and Production environments. It relies on four primary components:
+
+	• Docker Engine: 
+		The core underlying background code engine responsible for creating, running, and managing containers.
+	
+	• Docker Images: 
+		Read-only static templates and application blueprints built from a Dockerfile. They function as multi-layered, cached snapshots containing the application code, 
+		runtime libraries, and environment configurations.
+	
+	• Docker Containers: 
+		The active, lightweight, and runnable instances of an image. They maintain strict process isolation but dynamically share the host OS kernel.
+	
+	• Docker Volumes: 
+		Persistent data storage blocks completely isolated from a container's lifecycle. They ensure that mission-critical data files (like databases, application logs, 
+		and properties configs) are safely preserved without data loss when a container is stopped, destroyed, or restarted.
+	
+	• Docker Hub: 
+		A centralized public cloud registry hub utilized for sharing, discovering, and downloading pre-configured container images.
+
+Installation Verification
+	docker --version
+	docker run hello-world
+
+Running a Container with Custom Port Forwarding:
+	docker run -d -p 8080:8080 my-image
+
+	• -d: Launches the container detached in the background.
+	• -p 8080:8080: Maps Port 8080 of the host machine directly to Port 8080 inside the container.
+
+Essential Docker Commands:
+	Command Utility           Action and Execution Flow Mapping
+	
+	docker pull <image>       Downloads a target pre-configured container image from Docker Hub to your local machine.
+	
+	docker build              Compiles and builds a custom read-only local Docker image from a text Dockerfile blueprint.
+	
+	docker run                Boots up, instantiates, and executes a live, running container from a specific image blueprint.
+	
+	docker ps                 Lists all currently active, running container instances alongside their tracking IDs.
+	
+	docker logs <container>   Intercepts and displays the internal console logging history streams of a specific running container.
+	
+	docker stop <container>   Halts the execution of an active, running container safely.
+	
+	docker rm <container>     Permanently deletes a stopped container instance from the local environment tracking list.
+	
+	docker images             Lists all locally cached Docker image blueprints currently stored on the host machine.
+	
+	docker system prune       A critical maintenance utility that purges all unused containers and dangling images to optimize host memory management.
+
+https://www.docker.com/resources/what-container
+https://docs.docker.com/get-started/overview/
+https://docs.docker.com/get-started/
+https://medium.com/@VAISHAK_CP/spring-boot-and-docker-containerizing-your-applications-43b162fc2f0f
+

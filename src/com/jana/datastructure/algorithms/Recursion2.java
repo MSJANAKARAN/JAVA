@@ -89,6 +89,7 @@ public class Recursion2 {
 		}
 		// Choice 1: INCLUDE the current element nums[index]
 		current.add(arr[index]);
+		// If required to allow duplicates, pass index alone.
 		subsets(arr, index + 1, current, result);
 
 		// Backtrack: Remove the element to try the second choice
@@ -126,67 +127,70 @@ public class Recursion2 {
 		}
 	}
 
-	static void permuteUsingSwap(int[] arr,  int start, List<List<Integer>> result) {
-		if(start==arr.length) {
+	static void permuteUsingSwap(int[] arr, int start, List<List<Integer>> result) {
+		if (start == arr.length) {
 			List<Integer> res = new ArrayList<>(arr.length);
-			for(int a:arr) {
+			for (int a : arr) {
 				res.add(a);
 			}
 			result.add(res);
 			return;
 		}
-		for(int i=start;i<arr.length;i++) {
-            // Choice: Swap the element at index 'start' with the element at index 'i'
-			swap(arr,start,i);
-            // Recurse: Fix the next position (start + 1)
-			permuteUsingSwap(arr,start+1,result);
-            // Backtrack: Undo the swap to restore the array layout for the next iteration
-			swap(arr,start,i);
+		for (int i = start; i < arr.length; i++) {
+			// Choice: Swap the element at index 'start' with the element at index 'i'
+			swap(arr, start, i);
+			// Recurse: Fix the next position (start + 1)
+			permuteUsingSwap(arr, start + 1, result);
+			// Backtrack: Undo the swap to restore the array layout for the next iteration
+			swap(arr, start, i);
 
 		}
 	}
 
+	static void combinationSum1(int[] arr, ArrayList<Integer> current, int index, int currSum,
+			List<List<Integer>> result, int target) {
 
-	 static void combinationSum1(int[] arr, ArrayList<Integer> current,int index,int currSum, List<List<Integer>> result, int target) {
+		if (index == arr.length || currSum >= target) {
+			if (currSum == target) {
+				result.add(new ArrayList<>(current));
+			}
+			return;
+		}
 
-		 if(index==arr.length || currSum>=target) {
-			 if(currSum==target) {
-				 result.add(new ArrayList<>(current));
-			 }
-			 return;
-		 }
-		 
-		 current.add(arr[index]);
-		 currSum+=arr[index];
-//	     Pass 'index' instead of 'index + 1' to allow reuse
+		current.add(arr[index]);
+		currSum += arr[index];
+//	     Pass 'index' instead of 'index + 1' to allow reuse/duplicates
 //		 It is perfectly safe to pass index because base case currSum >= target acts as a guard
-		 combinationSum1(arr,current,index,currSum,result,target);
-		 
-		 currSum-=current.get(current.size()-1);
-		 current.remove(current.size()-1);
-		 combinationSum1(arr,current,index+1,currSum,result,target);
+		combinationSum1(arr, current, index, currSum, result, target);
+
+		currSum -= current.get(current.size() - 1);
+		current.remove(current.size() - 1);
+		combinationSum1(arr, current, index + 1, currSum, result, target);
 
 	}
 
-	 static void combinationSum2(int[] arr, ArrayList<Integer> current,int index,int currSum, List<List<Integer>> result, int target) {
+	static void combinationSum2(int[] arr, ArrayList<Integer> current, int index, int currSum,
+			List<List<Integer>> result, int target) {
 
-		 if(index==arr.length || currSum>=target) {
-			 if(currSum==target) {
-				 result.add(new ArrayList<>(current));
-			 }
-			 return;
-		 }
-		 for(int i=index;i<arr.length;i++) {
-		 current.add(arr[index]);
-		 currSum+=arr[index];
+		if (index == arr.length || currSum >= target) {
+			if (currSum == target) {
+				result.add(new ArrayList<>(current));
+			}
+			return;
+		}
+		for (int i = index; i < arr.length; i++) {
+			current.add(arr[index]);
+//			Instead currSum plus , recurse, then minus. better approach
+//			currSum += arr[index]; 
+
 //	     Pass 'index' instead of 'index + 1' to allow reuse
 //		 It is perfectly safe to pass index because base case currSum >= target acts as a guard
-		 combinationSum2(arr,current,index,currSum,result,target);
-		 
-		 currSum-=current.get(current.size()-1);
-		 current.remove(current.size()-1);
+			combinationSum2(arr, current, i, currSum + arr[i], result, target);
+
+//			currSum -= current.get(current.size() - 1);
+			current.remove(current.size() - 1);
 //		 combinationSum2(arr,current,index+1,currSum,result,target); //instead for loop
-		 }
+		}
 	}
 
 	public static void main(String[] args) {
@@ -303,12 +307,12 @@ public class Recursion2 {
 		List<List<Integer>> result4 = new ArrayList<>();
 		List<List<Integer>> result5 = new ArrayList<>();
 
-		int target=3;
-		combinationSum1(arr,new ArrayList<Integer>(),0,0,result4, target);
+		int target = 3;
+		combinationSum1(arr, new ArrayList<Integer>(), 0, 0, result4, target);
 		System.out.println(result4);
-		combinationSum2(arr,new ArrayList<Integer>(),0,0,result5, target);
+		combinationSum2(arr, new ArrayList<Integer>(), 0, 0, result5, target);
 		System.out.println(result4);
-		
+
 		System.out.println("\n================= Backtracking N-Queens ==================");
 //		Place N queens on an N×N chessboard such that no two queens attack each other.
 //		You recursively place one queen per row:
@@ -367,23 +371,23 @@ public class Recursion2 {
 //			Repeated calculation
 //		store: memo[n]
 //		Concept: Recursion + Memoization = Top-down Dynamic Programming
-		int n=6;
-		int fibRes = fibonacci(n, new int[n+1]);
+		int n = 6;
+		int fibRes = fibonacci(n, new int[n + 1]);
 		System.out.println(fibRes);
-		
+
 	}
 
 	static int fibonacci(int n, int[] memo) {
-		if(n<=1) {
+		if (n <= 1) {
 			return n;
 		}
-		
-		if(memo[n]!=0) {
+
+		if (memo[n] != 0) {
 			return memo[n];
 		}
-		
-		memo[n]=fibonacci(n-1,memo)+fibonacci(n-2,memo);
-		
+
+		memo[n] = fibonacci(n - 1, memo) + fibonacci(n - 2, memo);
+
 		return memo[n];
 	}
 }

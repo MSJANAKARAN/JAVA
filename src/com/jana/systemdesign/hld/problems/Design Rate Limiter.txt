@@ -1,0 +1,180 @@
+Suppose our API allows 100 requests per minute per user
+
+A user sends:
+    Request 1  → Allow
+    Request 2  → Allow
+    ...
+    Request 100 → Allow
+    Request 101 → Reject
+
+Response:
+    429 Too Many Requests
+
+The purpose is to prevent:
+        Abuse
+        DDoS-like application traffic
+        Accidental traffic spikes
+        Excessive resource consumption
+        One user consuming all capacity
+
+Imagine our application has three servers:
+
+                    Load Balancer
+                  /       |       \
+                 ↓        ↓        ↓
+              Server1  Server2  Server3
+
+Suppose the limit is: 100 requests/minute/user
+
+A naive implementation stores the counter inside each server:
+        Server 1 → userA = 40
+        Server 2 → userA = 30
+        Server 3 → userA = 30
+
+Total: 40 + 30 + 30 = 100
+But each server doesn't know about the others.
+
+Now another request goes to Server 1:
+    Server 1 → userA = 41
+
+Server 2 might also allow another request:
+    Server 2 → userA = 31
+Now we've exceeded the global limit.
+
+Therefore:
+The rate-limit state must be shared across application instances.
+This is the fundamental reason we need a distributed rate limiter.
+
+There are several possibilities.
+    Per user => user:123 → 100 requests/min
+    Per IP => ip:192.168.1.10 → 100 requests/min
+    Per API key => apiKey:abc123 → 10,000 requests/hour
+    Per endpoint => POST:/payments → 10 requests/min ; GET:/accounts → 100 requests/min
+
+Combined You can have: User + Endpoint
+For example: user:123:POST:/payments
+
+Functional Requirements:
+    The rate limiter should:
+        Determine whether a request is allowed.
+        Reject requests exceeding the configured limit.
+        Support different limits for different users/APIs.
+        Return HTTP 429 when the limit is exceeded.
+        Work across multiple application servers.
+
+Non-functional Requirements:
+    We want:
+        Very low latency
+        High availability
+        Horizontal scalability
+        Thread safety
+        Distributed consistency
+        Minimal overhead
+
+Architecture:
+                              CLIENT
+                                │
+                                ▼
+                         ┌──────────────┐
+                         │Load Balancer │
+                         └──────┬───────┘
+                                │
+                                ▼
+                         ┌──────────────┐
+                         │ API Gateway  │
+                         └──────┬───────┘
+                                │
+                         Rate Limit Check
+                                │
+                                ▼
+                       ┌─────────────────┐
+                       │ Rate Limiter    │
+                       │ Token Bucket    │
+                       └────────┬────────┘
+                                │
+                                ▼
+                         ┌────────────┐
+                         │   Redis    │
+                         │Shared State│
+                         └────────────┘
+                                │
+                        ┌───────┴────────┐
+                        │                │
+                     ALLOW             REJECT
+                        │                │
+                        ▼                ▼
+                 Backend Services       429
+                        │
+                        ▼
+                     Response
+
+Interview Explanation:
+    I would design the rate limiter as a distributed service so that 
+    request limits are enforced consistently across multiple application servers.
+
+    The main requirement is to limit requests based on a key such as user ID, API key, 
+    IP address or user plus endpoint. For example, a user may be allowed 100 requests per minute. 
+    Requests beyond that should receive HTTP 429 Too Many Requests.
+
+    At a high level, clients connect through a load balancer to an API Gateway. 
+    The gateway performs the rate-limit check before forwarding the request to backend microservices. 
+    This prevents rejected traffic from consuming backend resources.
+
+    Because the application is horizontally scaled, we cannot keep the rate-limit counter only in application memory. 
+    If we have three servers, the same user could hit different servers and each server would maintain 
+    a different counter. Therefore, I would use Redis as the shared state store.
+
+    For the rate-limiting algorithm, I would use a Token Bucket. The bucket has a maximum capacity and tokens 
+    are replenished at a fixed rate. Each request consumes one token. If a token is available, 
+    the request is allowed; otherwise, the gateway returns HTTP 429. Token Bucket is useful 
+    because it supports controlled bursts while still enforcing a sustainable request rate.
+
+    For example, with a capacity of 100 tokens and a refill rate of 10 tokens per second, 
+    a user can initially make a burst of up to 100 requests, and after exhausting the bucket, 
+    requests can continue at approximately 10 per second as tokens are replenished.
+
+    The Redis key could be something like rate:user:123, with the token count and last-refill timestamp 
+    stored as the state. I would use lazy refill, meaning tokens are calculated when a request arrives 
+    rather than running a background process continuously.
+
+    The most important concurrency issue is that refill, checking availability and consuming a token must be atomic. 
+    Otherwise, two application servers could simultaneously see one remaining token and both allow their requests. 
+    I would use a Redis Lua script or another atomic Redis operation to perform this state transition atomically.
+
+    For scalability, the application and gateway are stateless and can be horizontally scaled. 
+    Redis can be deployed as a Redis Cluster or replicated setup when traffic becomes large. 
+    Rate-limit keys should also have TTLs so inactive users don't consume Redis memory indefinitely.
+
+    For reliability, Redis failure requires a business decision. 
+    A fail-open strategy (AP) allows traffic when Redis is unavailable, preserving application availability 
+    but weakening rate-limit enforcement. A fail-closed strategy (CP) rejects traffic, providing stronger 
+    protection but reducing availability. For normal APIs I would choose based on business risk, 
+    while sensitive or expensive operations may require stricter protection.
+
+    We should also monitor allowed requests, rejected requests, Redis latency, Redis errors, 
+    hot keys and P95/P99 rate-limiter latency.
+
+    So the core architecture is:
+        Client → Load Balancer → API Gateway → Distributed Rate Limiter → Redis → Backend Services.
+
+    The key design decisions are Token Bucket for controlled bursts, Redis for shared distributed state, 
+    atomic operations for concurrency safety, and horizontal scaling for high traffic.
+
+
+Token Bucket formula:
+    newTokens =
+        elapsedTime × refillRate
+
+    tokens =
+        min(capacity,
+            oldTokens + newTokens)
+
+    if tokens >= 1:
+        tokens--
+        ALLOW
+    else:
+        REJECT
+
+
+
+

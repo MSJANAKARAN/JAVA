@@ -1,0 +1,403 @@
+
+Spring Boot
+	Spring Boot is an open-source, Java-based framework used to create standalone, production-ready applications.
+	It replaces heavy XML configurations with minimal files and auto-configuration features, allowing developers to focus on writing code.
+	
+	Key Features
+		Auto-Configuration: 
+			Automatically configures the project and activates dependencies based on the libraries present in the classpath.
+		
+		Embedded Servers: 
+			Comes with built-in servers like Tomcat, Jetty, or Undertow, eliminating the need for external server setup.
+		
+		Production-Ready Tools: 
+			Includes Spring Boot Actuator to monitor application health and performance metrics post-deployment.
+		
+		Maven Integration: 
+			Uses Maven as an online repository manager to automatically fetch and update project dependencies.
+
+	Dependencies & Web Layer
+		Structure: 
+			Dependencies are defined in Maven using starting/ending tags containing a group/ID (parent library) 
+			and an artifactID (exact dependency name).
+		
+		Spring Web: 
+			Automatically configures a Tomcat server, a JSON converter (for JavaScript Object Notation data exchange), 
+			and a Dispatcher Servlet (handles URL routing and API navigation between controllers).
+		
+		Static Resources: 
+			Provides built-in support for HTML, CSS, JavaScript, and web templates.
+
+	Data Persistence (JPA & Databases)
+		JPA (Java Persistence API): 
+			Manages relational database interactions directly from Java files.
+		
+		H2 Database: 
+			Spring Boot provides a built-in, console-based H2 database, allowing data persistence testing without installing an external RDBMS (like MySQL or PostgreSQL).
+		
+		Entity Manager Factory: 
+			Automatically manages database tables, columns, primary keys, and foreign keys based on Java classes.
+		
+		Spring Data JPA Repositories: 
+			Provides ready-to-use built-in database functions such as save(), delete(), and findById()
+
+	View Layer (Thymeleaf)
+		Integrates front-end view layers like Thymeleaf to handle static web templates.
+		Allows developers to build fully functional web UIs directly within the framework without needing an external JavaScript library.
+
+Layered Architecture (MVC)
+	Keeps code clean, scalable, and easy to maintain by separating the application into three distinct layers.
+	
+	• Controller Layer: 
+		Acts as a lightweight middleware that handles incoming HTTP requests and responses, keeping the core code separate from the user interface.
+	
+	• Service Layer: 
+		Houses the core business logic and service methods before data is passed along.
+	
+	• Repository Layer: 
+		Serves as the interface to the database, managing data access and executing operations.
+
+	Evolution of ORMs: 
+		Uses Object-Relational Mapping (ORM) frameworks like JPA (Java Persistence API), which serves as a modern upgrade to Hibernate.
+
+Dependency Injection (DI) & Configuration Management
+	• Constructor Injection: 
+		Utilises annotations like @Autowired to automatically wire components (e.g., injecting a repository into a service class), 
+		making the code highly modular, traceable, and testable.
+		
+	• Profile Management: 
+		Spring Boot allows developers to define separate configuration profiles tailored to specific environments 
+		(e.g., distinct databases for development, testing, and production).
+
+Exception Handling & Security
+	• Global Handling: 
+		Uses the @ControllerAdvice annotation to centralise and manage exceptions uniformly across all controllers, maintaining execution flow and readability.
+	
+	• Data Decoupling (DTOs): 
+		Employs Data Transfer Objects (DTOs) to separate internal data models from the data exposed to users. This shields sensitive fields from API responses
+
+Production-Ready Tools & Operations
+	• Spring Boot Starters: 
+		Incorporating baseline starter dependencies is a standard practice to pull in essential auto-configurations.
+	
+	• Actuators: 
+		Uses the org.springframework.boot:spring-boot-starter-actuator dependency to monitor real-time application health, metrics, performance, and environment details post-deployment.
+
+Testing & Documentation
+	• Testing Frameworks: 
+		Supports both unit and integration testing using the @SpringBootTest annotation alongside standard validation methods like assertEquals.
+	
+	• API Documentation: 
+		Leverages the OpenAPI framework (Swagger) via the org.springdoc:springdoc-openapi-ui dependency. 
+		This automatically generates a web UI containing all REST controllers to map out and test live APIs.
+
+https://www.geeksforgeeks.org/introduction-to-spring-boot/
+https://spring.io/guides/gs/spring-boot
+https://docs.spring.io/spring-boot/reference/using/auto-configuration.html
+
+Model-View-Controller (MVC) Pattern
+	
+	The Model (Backend Data & Entity)
+		Represents the application's raw data structure and underlying business logic. It contains zero UI or frontend presentation code.
+		Corresponds directly to a Java class or database entity. 
+		
+	The View (The User Interface)
+		The visual layer and file interface exposed to the end user. It transforms raw model data into a human-readable display.
+		Can be built using standard web files (HTML, CSS, JavaScript) or templating engines like Thymeleaf, JSP (JavaServer Pages).
+		
+	The Controller (The Routing Bridge)
+		Acts as an intermediary middleware and functional bridge connecting the backend Model and the frontend View.
+		Intercepts incoming user input and routes various HTTP requests
+
+Data and Control Flow in Spring MVC
+	• Forward Flow (Frontend to Backend / POST Mapping):
+		• The user inputs data into a form on a web page and clicks Submit.
+		• An HTTP request is sent to the designated endpoint (e.g., /welcome).
+		• The Controller intercepts and processes this incoming payload.
+		• The Controller constructs a Model object out of the form data.
+		• The Controller passes the Model down to the Service layer (which contains the business logic) and then to the Repository layer.
+		• The Repository writes and saves the data to the database using an ORM framework like JPA or Hibernate.
+	• Backward Flow (Backend to Frontend / GET Mapping):
+		• A user triggers a data fetch request (e.g., clicking a "View" button).
+		• Data flows in reverse: retrieved from the database by the Repository as a Model object.
+		• The Controller handles the data request and maps the retrieved variables back into the view.
+		• The processed data is rendered into the View file and returned as a readable webpage to the user.
+
+HTTP Request and Response Handling
+	Four Core HTTP Methods : GET, POST, POST, DELETE
+	
+	Key REST API Annotations
+		• RestController: 
+			A specialized controller annotation tailored specifically for building RESTful web services.
+			
+		• @RequestBody: 
+			Binds the incoming HTTP request payload body to a Java object argument in the method.
+			
+		• @PathVariable: 
+			Extracts dynamic values directly out of the URL path (e.g., pulling a specific user ID like 529 out of a routing path).
+			
+		• @ResponseEntity: 
+			Represents the entire HTTP response, allowing developers to customize and return specific status codes, headers, and bodies.
+	
+Thymeleaf Templating
+	Thymeleaf is a modern Java server-side HTML templating engine that integrates seamlessly with Spring MVC to render dynamic content within static HTML page structures.
+	
+	Data Transport: 
+		Controllers inject raw data strings or objects into the shared Model container using the model.addAttribute("key", value) method syntax.
+
+	Data Extraction: 
+		Once a variable is successfully tied to the backend Model, frontend templates can pull, evaluate, and inject that live data 
+		using the standard expression format: ${variableName} (e.g., ${username}).
+		
+	Example:
+		The Thymeleaf HTML (hello.html)
+			<!DOCTYPE html>
+			<html xmlns:th="http://thymeleaf.org">
+			<body>
+			
+			    <!-- When run on the server, this outputs: Hello, Sagar! -->
+			    <h1>Hello, <span th:text="${name}">Guest</span>!</h1>
+			
+			</body>
+			</html>
+
+		The Java Controller
+			@Controller
+			public class HelloController {
+			    
+			    @GetMapping("/greet")
+			    public String sayHello(Model model) {
+			        model.addAttribute("name", "Sagar"); // 1. Set the variable
+			        return "hello";                      // 2. Load hello.html
+			    }
+			}
+
+https://www.geeksforgeeks.org/mvc-design-pattern/
+https://www.geeksforgeeks.org/how-to-create-your-first-model-in-spring-mvc/
+https://www.geeksforgeeks.org/spring-boot-thymeleaf-with-example/
+
+Dependency Injection (DI) and Spring Beans
+	Inversion of Control (IoC):
+		A core architectural design principle where control over object creation and lifecycle management is shifted away 
+		from the explicit application program code and handed over to an automated external framework or container.
+		
+		The specialized built-in container responsible for initializing, configuring, assembling, 
+		and completely managing the lifecycle of Java objects (known as Spring Beans).
+
+	Dependency Injection (DI):
+		A specific design pattern used to physically implement IoC. Instead of a class instantiating its own internal dependencies (manually writing new ClassB()), 
+		objects dynamically receive their required dependencies from an external source at runtime.
+
+	Spring facilitates dependency wiring through three distinct functional mechanics using the @Autowired annotation:
+		Constructor Injection (Highly Recommended):
+			Required dependencies are cleanly passed directly as parameters through the class constructor 
+			(e.g., passing an Engine parameter into a Car constructor).
+		
+		Setter Injection:
+			Dependencies are assigned using traditional Java-bean style setter methods after the object is initially instantiated.
+		
+		Field Injection (Least Preferred):
+			The @Autowired annotation is attached directly onto a private field variable (e.g., private Engine engine;).
+
+Spring Beans and XML Configuration
+	A Spring Bean is an object instantiated, assembled, and entirely managed by the Spring IoC (Inversion of Control) Container.
+	
+	Engine.java 
+	A baseline component representing the dependency.
+	
+		package com.xml.demobean.model;
+		
+		public class Engine {
+		    public void start() {
+		        System.out.println("engine has got started");
+		    }
+		}
+	
+	Car.java
+	Maintains a constructor-based dependency on Engine.
+		package com.xml.demobean.model;
+		
+		public class Car {
+		    private final Engine engine;
+		
+		    // Parameterized constructor used for dependency injection
+		    public Car(Engine engine) {
+		        this.engine = engine;
+		    }
+		
+		    public void drive() {
+		        engine.start(); // Triggers the dependency logic
+		        System.out.println("car is driving");
+		    }
+		}
+	
+	The XML Blueprint (src/main/resources/beans.xml)
+		<?xml version="1.0" encoding="UTF-8"?>
+		<beans xmlns="http://springframework.org"
+		       xmlns:xsi="http://w3.org"
+		       xsi:schemaLocation="http://springframework.org
+		       http://springframework.org/spring-beans.xsd">
+		
+		    <!-- 1. Register the Engine bean -->
+		    <bean id="engine" class="com.xml.demobean.model.Engine" />
+		
+		    <!-- 2. Register the Car bean and inject the engine via constructor injection -->
+		    <bean id="car" class="com.xml.demobean.model.Car">
+		        <constructor-arg ref="engine" />
+		    </bean>
+		
+		</beans>
+
+	The Main Execution (DemoBeanApplication.java)
+		package com.xml.demobean;
+		
+		import com.xml.demobean.model.Car;
+		import org.springframework.context.ApplicationContext;
+		import org.springframework.context.support.ClassPathXmlApplicationContext;
+		
+		public class DemoBeanApplication {
+		    public static void main(String[] args) {
+		        // 1. Boot up the Spring application context runtime from beans.xml
+		        ApplicationContext context = new ClassPathXmlApplicationContext("beans.xml");
+		
+		        // 2. Retrieve the fully assembled Car instance from the IoC container
+		        Car car = context.getBean("car", Car.class);
+		
+		        // 3. Initiate the runtime execution chain
+		        car.drive();
+		    }
+		}
+
+Java Based Configuration:
+	The Java Configuration Class (AppConfig.java)
+		package com.javaconfig.demobean.config;
+	
+		import com.javaconfig.demobean.model.Car;
+		import com.javaconfig.demobean.model.Engine;
+		import org.springframework.context.annotation.Bean;
+		import org.springframework.context.annotation.Configuration;
+		
+		@Configuration // Marks this class as the structural container blueprint source
+		public class AppConfig {
+		
+		    @Bean // Registers the method's return value as a managed Spring Bean (named "engine")
+		    public Engine engine() {
+		        return new Engine();
+		    }
+		
+		    @Bean // Registers a managed bean named "car"
+		    public Car car() {
+		        // Intercepts the engine() bean method call to safely wire the dependency
+		        return new Car(engine()); 
+		    }
+		}
+
+	The Main Orchestration (DemoBeanApplication.java)
+		Instead of reading an external XML file via ClassPathXmlApplicationContext, the application initializes the runtime container environment 
+		using AnnotationConfigApplicationContext targeted directly at your configuration class blueprint.
+	
+		package com.javaconfig.demobean;
+		
+		import com.javaconfig.demobean.config.AppConfig;
+		import com.javaconfig.demobean.model.Car;
+		import org.springframework.context.ApplicationContext;
+		import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+		
+		public class DemoBeanApplication {
+		    public static void main(String[] args) {
+		        // 1. Boot up the runtime context using the Java configuration class metadata
+		        ApplicationContext context = new AnnotationConfigApplicationContext(AppConfig.class);
+		
+		        // 2. Retrieve the fully assembled Car instance from the IoC container
+		        Car car = context.getBean(Car.class);
+		
+		        // 3. Initiate the runtime execution chain
+		        car.drive();
+		    }
+		}
+
+https://docs.spring.io/spring-framework/reference/core/beans/dependencies/factory-collaborators.html#:~:text=Dependency%20injection%20(DI)%20is%20a,returned%20from%20a%20factory%20method.
+https://medium.com/@ahmed.abdelfaheem/inside-spring-boot-managing-bean-lifecycle-b46ae215ad00
+https://docs.spring.io/spring-framework/docs/4.2.x/spring-framework-reference/html/xsd-configuration.html
+
+Spring Boot Annotations and Configurations:
+	@SpringBootApplication: 
+		Placed on the main executable class to mark the application's entry point. 
+		It automatically bundles three critical annotations behind the scenes:
+		
+		• @Configuration: Allows registration of extra beans or configurations.
+		
+		• @EnableAutoConfiguration: Automatically configures framework dependencies based on the project classpath.
+		
+		• @ComponentScan: Scans the codebase packages to discover and initialize managed classes.
+		
+	@Component: Denotes a generic, multi-purpose Spring-managed bean.
+	
+	@Repository: Marks a data access layer class. It features an automated mechanism that handles database exception translations.
+	
+	@Controller: Used in standard web applications to return frontend views like HTML pages.
+
+	@RestController: A specialized blend of @Controller and @ResponseBody. It is custom-built for REST APIs to 
+		output raw data (JSON or XML) directly rather than rendering traditional HTML views.
+	
+	@Autowired: Tells Spring to automatically resolve and inject required dependencies into fields, setters, or constructors (constructor injection is preferred).
+	
+	@Bean: Used explicitly inside configuration classes to register custom objects or third-party libraries as Spring Beans.
+	
+	@Profile: Conditionally activates configuration properties or target beans based on specific environments 
+		(e.g., separating development, testing, or production profiles).
+		
+	Spring provides explicit annotations to map network routes directly to Java functions: 
+		@GetMapping, @PostMapping, @PutMapping, and @DeleteMapping
+	
+	@RequestBody: Automatically deserializes inbound JSON network payloads directly into standard Java data objects.
+	
+	@RequestParam handles custom-appended string variables of arbitrary length (query parameters). [/id?name=John]
+	
+	@PathVariable isolates and pulls out exactly one specific, embedded URL path segment at a time. [/id/10]
+	
+	@Entity: Declares a standard Java class as a relational database model entity managed by JPA.
+
+	@Id: Identifies the specific private attribute field chosen to serve as the database table's Primary Key.
+	
+	@GeneratedValue: Sets up the dynamic increment logic and strategy used to auto-generate primary key data entries.
+
+	@ControllerAdvice: Sets up a dedicated global controller interceptor capable of catching and managing 
+		unhandled runtime exceptions across the entire application footprint.
+	
+	@ExceptionHandler: Configured inline within exception controller files to build customized handler logic targeting highly specific Java exception scenarios.
+	
+application.properties and application.yml (YAML) configuration:
+	Both file types serve the exact same foundational purpose: to configure Spring Boot application settings such as database credentials, server ports, and logging levels.
+	
+	application.properties:
+		Simple key-value pairs (e.g., server.port=8080)
+			
+		server.port=8080
+		spring.datasource.url=jdbc:mysql://...
+		spring.datasource.username=root
+
+	application.yml (YAML):
+		Hierarchical tree structure using indentation and colons.
+	
+		server:
+		  port: 8080
+		spring:
+		  datasource:
+		    url: jdbc:mysql://...
+		    username: root
+
+Use Cases for Profiles
+	Spring Profiles allow the application setup to adapt to Development, Testing, Staging, and Production stages by altering:
+	
+	• Database Credentials: Unique connection strings, usernames, and passwords for isolated environments.
+	
+	• Logging Formats: Custom log storage paths or adjusted severity configurations per deploy target.
+	
+	• API Endpoints: Switching out base URLs for third-party mock services or real enterprise networks.
+	
+	• Feature Toggle Flags: Conditionally enabling or completely hiding platform features based on the active deployment environment.
+
+https://docs.spring.io/spring-framework/reference/core/beans/annotation-config/autowired-qualifiers.html
+https://docs.spring.io/spring-boot/reference/features/external-config.html
+https://www.geeksforgeeks.org/spring-boot-commandlinerunner-and-applicationrunner/

@@ -1,0 +1,177 @@
+REST Architectural Principles
+1. The Client-Server Architecture
+	Follows a strict model where the client (frontend or browser) and the server (backend framework) are entirely separated and maintain distinct programmatic roles.
+	
+2. Statelessness
+	Unlike legacy technologies (JSP, Servlets, or traditional Spring) that rely on built-in server-side session management or cookie tracking, REST is completely stateless. 
+	The server stores no context about the client's state between calls. Every inbound HTTP request is treated completely independently. 
+	Instead of cookies or session tracking, state and user authentication are managed externally using distinct tools like JWT (JSON Web Tokens) and OAuth codes.
+
+3. Uniform Interface
+	Simplifies data transmission by using a consistent, uniform interface across all API layers.
+	Four Primary HTTP Operations: 
+		• @GetMapping: Retrieves specific resource data from the server to the client.
+		
+		• @PostMapping: Directs payload variables from the frontend to securely create a brand new record inside the database repository.
+		
+		• @PutMapping: Intercepts, handles, and executes structural updates or modifications to pre-existing records.
+		
+		• @DeleteMapping: Processes requests to permanently remove targeted records from the database.
+
+4. Cacheability
+	Although REST avoids automated session caching, responses can be explicitly flagged as cacheable to reduce server traffic, lower computing loads, 
+	and significantly boost API execution times.
+	
+Automated JSON Serialization & The Jackson Framework
+	By default, Spring Boot embeds the Jackson framework to automatically handle data transformation tasks. 
+	It serializes Java backend data models straight into readable frontend JSON arrays, and deserializes inbound REST request payloads back into standard Java objects.
+	Placing @RestController at the class header combines the foundational routing capabilities of @Controller with an automated @ResponseBody directive. 
+	This explicitly instructs Spring Boot to skip traditional HTML page generation, prompting Jackson to automatically serialize the raw returned objects.
+	
+	GET (Read-Only)
+		• Purpose: Retrieves data without changing server state.
+		• Safety: Safe and Idempotent (multiple requests yield identical results).
+		• Caching: Fully cacheable (browsers or Spring @Cacheable).
+		• Endpoints: /books, /books/{id}.
+		
+	POST (Creation)
+		• Purpose: Submits a payload to create a new resource.
+		• Safety: Non-Idempotent (repeating it creates duplicate entries/records).
+		• Side Effects: Directly changes data state on the server.
+		• Endpoints: POST /users (registration, checkout payments).
+		
+	PUT (Replacement)
+		• Purpose: Updates or completely replaces an existing resource.
+		• Safety: Idempotent (repeated updates have the same net effect).
+		• Behavior: Full structural replacement; missing fields become null or are stripped.
+		• Endpoints: PUT /products/{id}.
+		
+	DELETE (Removal)
+		• Purpose: Permanently purges specific dataset elements.
+		• Safety: Idempotent (subsequent deletions find nothing left, resulting in the same state).
+		• Response: Standardly transfers a 204 No Content code.
+		• Endpoints: DELETE /products/{id}.
+
+	@RequestBody (Payload Ingestion)
+		Binds the body payload of an incoming HTTP request directly to a Java method parameter in the controller.
+		
+	@Path Variable (Dynamic URL Routing)
+		Extracts dynamic route variables straight out of the URL path segments and binds them directly to a method parameter.
+		
+	@RequestParam (Query Parameters & Filtering)
+		Extracts key-value query parameters appended onto the tail end of a URL query string (following the ? character).
+		
+	HTTP Status Codes
+		• 1xx (Informational Responses): Communicates initial request info.
+		
+		• 2xx (Success Responses): Signals successful requests (e.g., 200 OK for successful reading/GET operations, or 201 Created for successful creation/POST workflows).
+		
+		• 3xx (Redirection Responses): Tells the client to take additional action to complete the request.
+		
+		• 4xx (Client Error Responses): Identifies issues caused by the client (e.g., 400 Bad Request for invalid validation data, or 404 Not Found for missing resources).
+		
+		• 5xx (Server Error Responses): Flags backend execution failures, typically triggered by faulty business logic (e.g., 500 Internal Server Error).
+
+https://spring.io/guides/tutorials/rest
+https://www.geeksforgeeks.org/spring-boot-pathvariable-and-requestparam-annotations/
+https://www.toptal.com/java/spring-boot-rest-api-error-handling
+https://dev.to/jottyjohn/building-a-restful-api-with-spring-boot-a-comprehensive-guide-to-requestmapping-49lf
+
+Basic Authentication
+	An HTTP-based security protocol where the client encodes the raw username:password string into a Base64 envelope and attaches it directly inside the 
+	Authorization header vector for every request.
+
+	The backend interceptor catches the incoming string, decodes the Base64 format natively, matches the plain text credentials against the encrypted database storage 
+	(hashed using the bcrypt algorithm), and routes the request. No session or state data is saved on the server.
+
+JWT (JSON Web Token) Authentication
+	A stateless, token-based mechanism where the server validates credentials once upon login and issues a digitally signed token to the client.
+
+	The client authenticates using standard username and password fields. The server returns a structured JWT string. 
+	For subsequent calls, the client attaches this string inside the headers formatted explicitly as a Bearer Token (Authorization: Bearer <token>). 
+	The server verifies the cryptographic signature directly without opening up a database session.
+	
+Role-Based Access Control (RBAC)
+	Role-Based Access Control is an authorization methodology used to restrict or permit system resource access based on assigned user roles (e.g., ADMIN, USER, PUBLIC).
+	
+	It separates API functionalities so that administrative tasks are kept safe from regular customers or unauthenticated public traffic.
+	 
+OAuth2 Authentication
+	OAuth2 is an industry-standard authentication and authorization framework that allows applications (Clients) to obtain limited, secure access to user accounts 
+	on an HTTP service (such as GitHub, Google, or Facebook) via an external Authorization Server.
+	
+	Core OAuth2 Terminologies
+		• Resource Owner: The end user who owns the account data and grants permission to the client application.
+		
+		• Client: Your standalone Spring Boot application requiring authentication access to proceed.
+		
+		• Authorization Server: The third-party platform (e.g., GitHub or Google) that verifies the user identity and issues an Access Token.
+		
+		• Access Token: A temporary cryptographic string issued by the provider to prove the user has successfully logged in and authorized the client.
+
+	To link the Spring Boot backend with GitHub(Free), developers must navigate to GitHub settings and register a New OAuth App
+
+Spring Security Framework
+	Spring Security serves as the industry-standard framework for securing Spring-based web architectures, providing robust security tools:
+	
+	• Authentication: Verifies the underlying identity of a user attempting to connect to the platform.
+	
+	• Authorization: Controls resource access levels conditionally based on assigned roles, rules, or precise permissions.
+	
+	• Password Management: Manages secure credential matching using high-level hashing models like the bcrypt algorithm.
+	
+	• Session Management: Controls operational log-in session states via state configurations like JWT or Basic Authentication.
+	
+	• CSRF Protection: Features built-in defenses to safeguard applications against Cross-Site Request Forgery and malicious cross-site scripting attacks.
+	
+	• Integration Support: Integrates out of the box with advanced third-party identity models (such as OAuth2 networks).
+
+https://www.baeldung.com/rest-api-spring-oauth2-angular
+https://reflectoring.io/spring-cors/
+https://dev.to/ayshriv/oauth-20-authentication-in-spring-boot-a-guide-to-integrating-google-and-github-login-2hga
+
+Best Practices for REST API Documentation
+	The SpringDoc Dependency: 
+		Integrating the standard library dependency springdoc-openapi-starter-webmvc-ui automatically initializes an interactive OpenAPI Swagger UI dashboard 
+		without manual code generation, which is highly beneficial for both unit testers and developers.
+	
+	Continuous Integration Integration (CI/CD): 
+		Documentation should be integrated directly into your automated build systems and CI/CD pipelines alongside advanced container tools (like Docker and AWS) 
+		to ensure schema modifications are dynamically tracked and verified on every deployment.
+	
+	Declarative Open-API Swagger markers
+		The @Tag Annotation: 
+			Classifies and groups controller operations cleanly inside the Swagger UI interface panel.
+		
+		The @Schema Annotation: 
+			Document both Request and Response Data Models (DTOs) down to the individual property level by explicitly declaring descriptive summaries and structural mock values
+			
+			@Schema(description = "User's full name", example = "Alice Smith")
+			private String name;
+		
+		The @ExternalDocumentation Annotation:
+			The @ExternalDocumentation annotation (springdoc-openapi library) allows you to attach an external URL link directly to your API documentation inside the Swagger UI panel.
+
+			@GetMapping("/api/v2/payments/crypto")
+		    @Operation(
+		        summary = "Process Cryptocurrency Transaction",
+		        description = "Handles complex blockchain routing balances.",
+		        externalDocs = @ExternalDocumentation(
+		            description = "Enterprise Cryptographic Security Guide & Compliance Rules",
+		            url = "https://mycompany.com"
+		        )
+		    )
+		    public String processCryptoPayment() {
+		        return "Payment processed successfully";
+		    }
+    
+	    Strict Endpoint Versioning: 
+	    	When migrating schemas from old layouts over to structural modifications (Version 1 to Version 2), decouple the changes using path segments (e.g., /api/v1/users) 
+	    	or custom request header parameters.
+		
+		Keep Documentation Up-to-Date: 
+			Documentation must be continuously refined through build automation
+
+https://learning.postman.com/docs/introduction/overview/
+https://medium.com/@gaddamnaveen192/api-versioning-in-spring-boot-all-4-types-explained-with-examples-and-best-practices-9619e41d2b9e
+https://swagger.io/solutions/api-design/

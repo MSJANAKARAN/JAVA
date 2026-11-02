@@ -1,0 +1,132 @@
+Cloud Service Models (IaaS vs. PaaS vs. FaaS)
+	• Infrastructure as a Service (IaaS): 
+		Provides virtualized computing resources over the internet. Users manage the OS, middleware, and applications, 
+		while the provider manages hardware, networking, and storage. (Examples: AWS EC2, Google Compute Engine, Azure VMs).
+	
+	• Platform as a Service (PaaS): 
+		Provides a platform for developing, running, and managing applications by removing infrastructure management. 
+		Includes the OS, runtime, middleware, and development tools. (Examples: Heroku, Google App Engine, Azure App Service).
+	
+	• Function as a Service (FaaS): 
+		Provides a serverless way to execute modular pieces of code on-demand.
+		
+AWS ECS for Spring Boot Applications
+	• Container Orchestration: 
+		Fully managed service that supports, scales, and automatically manages Docker container deployments.
+	
+	• Simplified Deployment: 
+		Automates Spring Boot container deployments without complex infrastructure jargon.
+	
+	• Scalability & High Availability: 
+		Auto-scales based on traffic and uses Multiple Availability Zone (AZ) deployments to ensure application uptime.
+	
+	• AWS Ecosystem Integration: 
+		Works seamlessly with IAM (security), CloudWatch (logs/metrics/alarms), Application Load Balancers (ALB), Redis, and Secret Manager.
+	
+	• Cost Optimization: 
+		Pay-only-for-what-you-use model that leverages AWS Fargate (serverless containers) to eliminate infrastructure management overhead.
+	
+	• CI/CD Workflow: 
+		Integrates with AWS CodePipeline and AWS CodeBuild to automate building, testing, and deploying Spring Boot applications.
+
+AWS ECS Architecture & Components
+	• Amazon Elastic Container Registry (ECR): 
+		A secure, fully managed Docker container registry used to store, manage, share, and version-control container images.
+	
+	• ECS Tasks: 
+		The running instances of your containers, configured by Task Definitions (blueprints created from ECR images).
+	
+	• ECS Services: 
+		Manages long-running tasks, ensures the desired container count is maintained, and handles load balancing, service discovery, and zero-downtime updates.
+
+	The ECS Deployment Workflow
+		1. Push the Spring Boot Docker image to Amazon ECR.
+		
+		2. Create task definitions using the pushed ECR images.
+		
+		3. Run tasks manually or deploy them via ECS Services.
+		
+		4. Maintain availability as the service automatically handles scaling, updates, and desired task counts.
+
+https://azure.microsoft.com/en-us/resources/cloud-computing-dictionary/what-is-paas/
+https://docs.aws.amazon.com/AmazonECS/latest/developerguide/what-is-ecs.html
+https://docs.aws.amazon.com/AmazonECS/latest/developerguide/Welcome.html
+
+
+Pushing a Docker Image to AWS ECR
+	• Prerequisites: AWS CLI (configured with credentials), an active Docker instance, and a created AWS ECR repository.
+	
+	• The 3-Step Process:
+		1. Authenticate: Use the AWS CLI to authenticate the local Docker client to the ECR registry.
+		
+		2. Tag: Tag the local Docker image with the specific AWS ECR repository URL.
+		
+		3. Push: Execute the Docker push command to upload the tagged image to the ECR repository.
+
+AWS Fargate Deployment & Settings
+		A serverless compute engine for containers (ECS and EKS) that runs containers automatically without requiring you to manage underlying servers or cluster infrastructure.
+	
+	• Deployment Steps: 
+		Push the image to ECR -> Define an ECS Task Definition using the Fargate launch type -> Configure VPC networking (subnets, security groups) -> Launch and monitor via the ECS console/CLI.
+
+Load Balancers & Target Groups
+	• Load Balancer: 
+		Distributes incoming traffic across multiple targets (containers/EC2 instances) to ensure high availability. Application Load Balancer (ALB) is the preferred choice for ECS.
+	
+	• Target Groups: 
+		A collection of targets where traffic is routed. ECS services automatically register running tasks into these groups dynamically.
+	
+	• Health Checks: 
+		The load balancer continuously monitors configured endpoints and automatically stops sending traffic to unhealthy tasks, maintaining application reliability.
+
+IAM Roles & VPC Security Foundations
+	• AWS IAM (Identity & Access Management): 	
+		Controls resource permissions using JSON policy documents. 
+		It relies on the principle of least privilege and uses temporary credentials to prevent long-term security exposure.
+	
+	• Amazon VPC (Virtual Private Cloud): 
+		Logically isolates virtual networks. 
+		It allows segregation of resources using public subnets (internet-facing) and private subnets (secure backend).
+
+https://docs.aws.amazon.com/AmazonECR/latest/userguide/docker-push-ecr-image.html
+https://docs.aws.amazon.com/AmazonECS/latest/userguide/what-is-fargate.html
+https://docs.aws.amazon.com/elasticloadbalancing/latest/application/introduction.html
+https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles.html
+https://docs.aws.amazon.com/vpc/latest/userguide/VPC_Security.html
+
+
+Managing Environment Variables in ECS
+	• Why Use Them: 
+		Separates configuration details (database URLs, API endpoints, feature flags) from application code. 
+		This enables configuration changes across environments (dev, staging, prod) without rebuilding the container image.
+	
+	• Direct Definition: 
+		Defined directly within the containerDefinitions section of an ECS Task Definition.
+	
+	• Updating Variables: 
+		To update environment variables, you must create a new revision of the Task Definition and update the ECS Service to trigger a rolling update with zero downtime.
+	
+	• Best Practice: 
+		Avoid hardcoding any sensitive data directly in the Task Definition or container images.
+
+Secret Management with AWS Systems Manager Parameter Store
+	A fully managed service that centralizes configuration data and secrets. It supports plain text as well as encrypted data using AWS Key Management Service (KMS).
+	
+	Offers secure storage at rest, fine-grained access control using IAM policies, automatic version tracking, and audit logging.
+
+Spring Profiles & Auto-Deployment Configurations
+• Spring Profiles: 
+		A feature used to segregate configuration based on the environment (e.g., dev, prod). Activated by setting the spring.profiles.active property in your property files or via environment variables.
+	
+	• ECS Activation: 
+		Easily activated by passing the environment variable SPRING_PROFILES_ACTIVE with a value like prod inside the ECS Task Definition.
+	
+	• CI/CD Integration: 
+		Automated pipelines (CI/CD) dynamically inject environment variables and set the correct Spring Profile based on the target branch or deployment phase.
+
+https://docs.aws.amazon.com/AmazonECS/latest/developerguide/taskdef-envfiles.html
+https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-parameter-store.html
+https://docs.spring.io/spring-boot/reference/features/profiles.html
+
+
+

@@ -16,6 +16,7 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -102,8 +103,8 @@ public class Java8Features implements CalculatorInterface8 {
 //		Can Lambda replace every interface?
 //			No. It only works with Functional Interfaces.
 //		Can Lambda work without a Functional Interface?
-//				No. Lambda expressions require a target type that is a functional interface.
-//		Can Lambda have loops? Yes.
+//			No. Lambda expressions require a target type that is a functional interface.
+//		Can Lambda have loops(for, while loop inside lambda)? Yes.
 //		What is a Functional Interface? Can you create your own?
 //			An interface with exactly one abstract method.
 //			Yes, use @FunctionalInterface to enforce this rule at compile time.
@@ -119,9 +120,18 @@ public class Java8Features implements CalculatorInterface8 {
 //			Local variables live on the stack; Lambdas live on the heap.
 //			The JVM makes a copy of the variable for the Lambda.
 //			Preventing changes avoids race conditions and synchronization bugs.
+//				public void printNumbers() {
+//				    int total = 10; // Local variable
+//				    
+//				    // Compilation Error: Variable 'total' is captured by lambda but is not effectively final
+//				    Runnable r = () -> System.out.println(total); 
+//				    
+//				    total = 20; // Reassignment breaks "effectively final" status
+//				    r.run();
+//				}
 //		How do you handle Checked Exceptions inside a Lambda expression?
 //			Lambdas cannot throw checked exceptions(checked at compile time) unless the functional interface method declares them.
-//			Wrap the risky code in a standard try-catch block inside the Lambda body.
+//			Wrap the risky code in a standard try-catch block(try catch convert it to unchecked runtime exception) inside the Lambda body.
 //			Extract the logic into a helper method to keep the code readable. Wrap it inside a custom runtime exception wrapper.
 
 //		Before
@@ -249,7 +259,7 @@ public class Java8Features implements CalculatorInterface8 {
 //					        ↓
 //					TERMINAL OPERATION [End the stream pipeline and produce a result or side effect.]
 //					  collect() forEach() reduce() count() min() max() findFirst() findAny() anyMatch() allMatch() noneMatch()
-//					        |
+//					     =   |
 //					        ↓
 //					     RESULT
 		List<Integer> list = Arrays.asList(7, 3, 8);
@@ -551,9 +561,9 @@ public class Java8Features implements CalculatorInterface8 {
 		System.out.println(encoded1);
 
 		byte[] decode = Base64.getDecoder().decode(encoded1);
-		System.out.println(decode.toString());
+		System.out.println("toString: "+ decode.toString());
 		String decoded1 = new String(decode);
-		System.out.println(decoded1);
+		System.out.println("new String(): "+decoded1);
 //		Extra Knowledge:
 //		The reason new String(decoded) works while decoded.toString() fails is because of 
 //		how Java handles arrays vs. objects, and how strings are constructed from raw binary data.

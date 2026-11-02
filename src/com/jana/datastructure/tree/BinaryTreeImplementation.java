@@ -2,14 +2,34 @@ package com.jana.datastructure.tree;
 
 public class BinaryTreeImplementation {
 
-	static class Node {
+	static class TreeNode {
 		int data;
-		Node left, right;
+		TreeNode left, right;
 
-		Node(int data) {
+		TreeNode(int data) {
 			this.data = data;
 			left = right = null;
 		}
+	}
+
+	public static int maxDepth(TreeNode root) {
+		if (root == null) {
+			return 0;
+		}
+
+		return 1 + Math.max(maxDepth(root.left), maxDepth(root.right));
+	}
+
+	public static int maxDiameter(TreeNode root, int[] max) {
+		if (root == null) {
+			return 0;
+		}
+
+		int left = maxDiameter(root.left, max);
+		int right = maxDiameter(root.right, max);
+
+		max[0] = Math.max(max[0], left + right);
+		return 1 + Math.max(left, right);
 	}
 
 	public static void main(String[] args) {
@@ -18,14 +38,21 @@ public class BinaryTreeImplementation {
 //		The topmost node in a binary tree is called the root, 
 //		and the bottom-most nodes(having no children) are called leaves.
 
-		Node firstNode = new Node(4);
-		Node secondNode = new Node(3);
-		Node thirdNode = new Node(7);
-		Node fourthNode = new Node(5);
+		TreeNode firstNode = new TreeNode(4);
+		TreeNode secondNode = new TreeNode(3);
+		TreeNode thirdNode = new TreeNode(7);
+		TreeNode fourthNode = new TreeNode(5);
 
 		firstNode.left = secondNode;
 		firstNode.right = thirdNode;
 		secondNode.left = fourthNode;
+
+		System.out.println("Maximum Depth: " + maxDepth(firstNode));
+
+		int[] result = { 0 };
+		// Passing array to get modifying max results inside same reference array object
+		maxDiameter(firstNode, result);
+		System.out.println("Maximum Diameter: " + result[0]);
 
 	}
 
@@ -34,14 +61,14 @@ public class BinaryTreeImplementation {
 //	Complete Binary Tree → All levels are fully filled except possibly the last, which is filled from left to right.
 //	Perfect Binary Tree → Every level is completely filled, and all leaves are at the same depth.
 //	Balanced Binary Tree → The left and right subtrees differ in height by at most 1.
-	
+
 //	Binary Tree can be classified into the following special types:
 //		Binary Search Tree
 //		AVL Tree
 //		Red Black Tree
 //		B Tree
 //		B+ Tree
-		
+
 //	DFS Traversals: Explore one branch fully before backtracking.
 //	In-Order (LNR): Left → Node → Right (retrieves BST elements in sorted order).
 //	Pre-Order (NLR): Node → Left → Right (used for tree reconstruction).
@@ -49,7 +76,7 @@ public class BinaryTreeImplementation {
 //	BFS Traversals: Visit nodes level by level.
 //	Level-Order: Processes nodes from top to bottom (used in shortest path algorithms).
 //	Zig-Zag Traversal: Alternates left-to-right and right-to-left at each level (used in hierarchical structures).
-	
+
 //	The maximum number of nodes at level L of a binary tree is 2L.
 //	The maximum number of nodes in a binary tree of height H is 2H+1 – 1.
 //	Total number of leaf nodes in a binary tree = total number of nodes with 2 children + 1.

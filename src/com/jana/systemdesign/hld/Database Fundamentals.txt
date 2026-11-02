@@ -1,0 +1,346 @@
+Part A — SQL Database
+1. Index ⭐⭐⭐⭐⭐
+	An index is a data structure that helps the database find rows faster without scanning the entire table.
+	Suppose: SELECT * FROM orders WHERE user_id = 'john@example.com';
+	Without an index: Orders table scans all rows.
+	
+	With: CREATE INDEX idx_orders_user ON orders(user_id);
+	the database can locate matching rows much faster.
+	
+	Indexes improve reads but add overhead to: INSERT / UPDATE / DELETE
+	because the index also needs maintenance. so, indexes have a cost.
+	Interview answer:
+	Indexes speed up read queries by avoiding full table scans, but they consume storage and add write overhead
+
+	The PRIMARY KEY in almost any modern database system (such as PostgreSQL, MySQL, SQL Server, or Oracle), 
+	the database automatically creates a unique index on that column behind the scenes. No need to create a separate index manually.
+
+2. Composite Index ⭐⭐⭐⭐
+	Suppose: SELECT * FROM orders WHERE user_id = ? AND status = ?;
+	A composite index can be:
+		CREATE INDEX idx_orders_user_status ON orders(user_id, status);
+	
+	Leftmost-prefix rule
+		For: (user_id, status)
+		the index is useful for:
+			user_id
+			user_id + status
+		but generally not as effectively for:
+			status alone
+		The exact optimizer behavior depends on the database and query.
+
+3. Unique Index
+	Example: CREATE UNIQUE INDEX idx_email ON users(email);
+	
+	This provides both: Fast lookup + Uniqueness enforcement
+	For financial systems, database constraints are important because application-level checks alone can race.
+
+4. Transaction ⭐⭐⭐⭐⭐
+	A transaction groups multiple database operations into one logical unit of work.
+	Example: money transfer. 
+		Account A: -₹100
+		Account B: +₹100
+		
+	These should not become: A → -₹100 B → FAILED
+	Instead: 
+		BEGIN
+		Debit A
+		Credit B
+		COMMIT
+	If something fails: ROLLBACK
+
+5. ACID ⭐⭐⭐⭐⭐
+	Atomicity:
+		A transaction must either complete entirely or not happen at all. 
+		If a single part of the transaction fails, the entire transaction is rolled back,
+		and the database is left unchanged.
+			Debit A
+			Credit B
+		Either: Both succeed or Both rollback.
+	
+	Consistency:
+		A transaction can only transition the database from one valid state to another, 
+		maintaining all predefined rules, constraints, and cascades. It prevents data corruption.
+		
+		Imagine transferring ₹5,000 from Account A to Account B.
+		Ensures that the total sum of money across both accounts 
+		remains identical before and after the transfer.
+		
+	Isolation:
+		Multiple transactions occurring concurrently must execute without interfering with each other.
+	
+		Transaction A and B both modifying the same account.
+		Isolation controls what each transaction can see from concurrent work.
+		The intermediate state of a transaction is invisible to other transactions until it is fully committed.
+	
+	Durability:
+		Once a transaction is successfully committed, its changes are permanently saved in non-volatile memory 
+		(like a hard drive) and will not be lost, even in the event of a total system crash or power failure.
+
+6. Isolation Levels ⭐⭐⭐⭐⭐
+	Dirty Read
+		Transaction A reads data that Transaction B changed but hasn't committed.
+			B → Balance = ₹500
+			       ↓
+			A reads ₹500
+			       ↓
+			B ROLLBACK
+		A saw data that never actually committed.
+		
+	Non-Repeatable Read
+		Transaction A reads the same row twice and gets different committed values 
+		because Transaction B updated it between the reads.
+			A → read = ₹100
+			B → update = ₹200 + commit
+			A → read = ₹200
+		
+	Phantom Read
+		Transaction A executes a range query twice and sees additional/deleted rows because another transaction inserted/deleted matching rows.
+			A → WHERE amount > 100 → 5 rows
+			B → INSERT amount = 500
+			A → WHERE amount > 100 → 6 rows
+
+7. Isolation Level Cheat Sheet
+	| Isolation        | Dirty Read | Non-repeatable Read |     Phantom Read      |
+	| ---------------- | ---------: | ------------------: | --------------------: |
+	| Read Uncommitted |   Possible |       Possible	  |              Possible |
+	| Read Committed   |         No |       Possible	  |              Possible |
+	| Repeatable Read  |         No |             No	  | DB-dependent handling |
+	| Serializable     |         No |             No   	  |                    No |
+	The exact behavior can vary by database implementation
+	Key trade-off
+	More isolation -> More consistency -> Potentially less concurrency
+
+8. Locking ⭐⭐⭐⭐⭐
+	Locks control concurrent access to data.
+	Two common concepts:
+		Pessimistic locking
+		Optimistic locking
+
+9. Pessimistic Locking
+	Assume conflict is likely.
+		Transaction A
+		     ↓
+		LOCK row
+		     ↓
+		Update
+		     ↓
+		COMMIT
+		     ↓
+		Unlock
+	Another transaction has to wait or fail depending on the lock behavior.
+	Example: SELECT * FROM accounts WHERE account_id = 101 FOR UPDATE;
+	Useful when concurrent modification is highly likely and correctness requires serialization.
+
+10. Optimistic Locking ⭐⭐⭐⭐
+	Assume conflicts are relatively uncommon.
+	Table: account_id, balance, version
+	Initially: balance = 1000, version = 5
+	Transaction reads: version = 5
+
+	Update: UPDATE accounts SET balance = 900, version = 6 WHERE account_id = 101 AND version = 5;
+	
+	If another transaction already changed it: version = 6
+	then: Rows updated = 0
+	The application detects the conflict and retries/rejects.
+	
+	The most common way to implement optimistic locking is by using a version number or a timestamp column in the table.
+	Read: User A and User B read the exact same record from the database. The record currently shows Version = 1.
+	Modify: Both users make changes to the data locally on their applications.
+	Commit (User A goes first): User A saves their changes. The database executes a query like:
+		UPDATE products SET price = 100, version = version + 1 WHERE id = 42 AND version = 1;
+	Since the version in the database is still 1, the update succeeds. The record is updated, and the version changes to 2.
+	
+	Commit (User B goes next): User B tries to save their changes. The database runs a similar query:
+		UPDATE products SET price = 120, version = version + 1 WHERE id = 42 AND version = 1;
+	Failure! The update affects 0 rows because the database version is now 2, not 1. User B’s transaction is rejected 
+	(typically throwing an OptimisticLockException).
+
+11. Pessimistic vs Optimistic
+	|                   | Optimistic                     | Pessimistic                  |
+	| ----------------- | ------------------------------ | ---------------------------- |
+	| Assumption        | Conflicts rare                 | Conflicts likely             |
+	| Lock held         | Usually no DB lock during read | Yes                          |
+	| Performance       | Good under low contention      | Can degrade under contention |
+	| Conflict handling | Detect later                   | Prevent/serialize            |
+	| Example           | Product update                 | Account balance              |
+
+12. Database Replication ⭐⭐⭐⭐⭐
+	Replication means maintaining copies of database data.
+	Typical architecture:
+	             Primary
+	            /       \
+	           ↓         ↓
+	      Replica 1   Replica 2
+	Writes:
+		Application
+		     ↓
+		Primary
+	Reads:
+		Application
+		     ↓
+		Replicas
+	This can increase read capacity and availability.
+
+13. Primary Failure
+	If primary fails:
+		Primary ❌
+		    ↓
+		Replica promoted
+		    ↓
+		New Primary
+	This is called failover.
+	
+	Real systems need mechanisms for:
+		Failure detection
+		Leader election / promotion
+		Connection redirection
+		Data-loss handling
+		Recovery
+
+14. Replication Lag ⭐⭐⭐⭐
+	Primary: balance = 1000
+	You update: balance = 900
+	
+	But replica hasn't received the update yet:
+	Replica: balance = 1000
+
+	Then: WRITE (Primary), READ (Replica) may return stale data.
+	This is called Replication lag
+
+15. Read-After-Write Problem
+	Example: POST /orders
+	returns: Order created
+	
+	Immediately: GET /orders goes to a lagging replica.
+	The newly created order might not appear yet.
+	
+	Solutions include:
+		Read from primary
+		Session/causal consistency mechanisms
+		Wait for replication
+		Application-level routing
+
+16. Partitioning ⭐⭐⭐⭐⭐
+	Partitioning splits a large table into smaller logical pieces.
+	Example:
+		Orders
+		   |
+		   ├── 2024
+		   ├── 2025
+		   └── 2026
+	This is often called range partitioning.
+	
+	For huge transaction tables:
+		transactions_2026_01
+		transactions_2026_02
+		transactions_2026_03
+		...
+
+17. Partitioning vs Sharding ⭐⭐⭐⭐⭐
+	Partitioning = Splits data within a database system into partitions.
+		One logical DB
+		 ├── Partition 1
+		 ├── Partition 2
+		 └── Partition 3
+	 
+	Sharding = Splits data across different database nodes/clusters.
+		Application
+		     |
+		 ┌───┼────┐
+		 ↓   ↓    ↓
+		DB1 DB2  DB3
+	
+	Simplified:
+		Partitioning = divide data.
+		Sharding = distribute partitions across independent database nodes.
+
+Part B — NoSQL
+18. Key-Value Database ⭐⭐⭐⭐⭐
+	Structure: Key → Value (Redis, DynamoDB)
+	Example:
+		"user:101" → User data
+		"session:xyz" → Session data
+		
+	Excellent for:
+		Caching
+		Sessions
+		Feature flags
+		Simple lookups
+		Rate limiting
+
+19. Document Database ⭐⭐⭐⭐⭐
+	Stores JSON-like documents. (MongoDB, Couchbase)
+	Example:
+		{
+		  "userId": 101,
+		  "name": "John",
+		  "orders": [
+		    {"id": 1, "amount": 500},
+		    {"id": 2, "amount": 900}
+		  ]
+		}
+	
+	Good for:
+		Flexible schema
+		Product catalogs
+		Content
+		User profiles
+		Data with nested structures
+
+20. Wide-Column Database ⭐⭐⭐⭐
+	Data is organized around rows and column families. (Cassandra, HBase)
+	Useful for:
+		Very large datasets
+		High write throughput
+		Distributed workloads
+		Predictable query patterns
+	
+	Example: Only columns with actual values are stored. No space is wasted on NULLs.
+		RowKey: 101
+		  -> ProfileFamily: { "Name": "Alice", "Email": "alice@email.com" }
+		  -> SocialFamily:  { "Twitter": "@alice" }
+		RowKey: 102
+		  -> ProfileFamily: { "Name": "Bob", "Email": "bob@email.com" }
+		  -> ContactFamily: { "Phone": "555-0199" }
+
+21. Graph Database ⭐⭐⭐
+	Stores: Nodes + Relationships. (Neo4j, Amazon Neptune)
+	
+	Example:
+		User A
+		  |
+		  | FRIEND
+		  ↓
+		User B
+		  |
+		  | FRIEND
+		  ↓
+		User C
+	
+	Useful for:
+		Social networks
+		Fraud relationships
+		Recommendation systems
+		Dependency networks
+
+22. NoSQL Types — Cheat Sheet
+	| Type        | Data Model           | Example   | Good For              |
+	| ----------- | -------------------- | --------- | --------------------- |
+	| Key-Value   | Key → Value          | Redis     | Cache/session         |
+	| Document    | JSON/document        | MongoDB   | Flexible entities     |
+	| Wide Column | Rows/column families | Cassandra | Huge distributed data |
+	| Graph       | Nodes + edges        | Neo4j     | Relationships         |
+
+23. SQL vs NoSQL ⭐⭐⭐⭐⭐
+	| SQL                           | NoSQL                                  |
+	| ----------------------------- | -------------------------------------- |
+	| Structured schema             | Often flexible schema                  |
+	| Strong relational model       | Usually specialized data model         |
+	| Joins                         | Often denormalized                     |
+	| Strong transaction support    | Depends on database                    |
+	| Complex queries               | Access-pattern focused                 |
+	| Vertical + horizontal options | Often designed for distributed scaling |
+
+
+

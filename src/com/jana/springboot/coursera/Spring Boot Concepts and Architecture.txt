@@ -1,0 +1,380 @@
+Spring Boot Internals:
+
+ApplicationContext:
+	In the Spring Framework, the ApplicationContext is the primary Inversion of Control (IoC) container. 
+	It acts as a centralized registry responsible for instantiating, configuring, managing, 
+	and destroying Spring beans (the objects that make up the application)
+
+Bean Lifecycle Phases:
+	1. Instance Creation (Constructor Execution)
+		When  run the Spring Boot project, the container reads the components (like a service class) 
+		and creates a raw instance of the object in memory.	
+		Mechanism: It achieves this by invoking the class's constructor.
+		
+	2. Property Population (Dependency Injection)
+		Once the instance exists, Spring injects all the necessary dependencies required by that class.
+		Mechanism: It commonly uses the @Autowired annotation to wire objects together. 
+		This can be handled via constructor injection, setter injection, or field injection.	
+		
+	3. Initialization (Post-Construct Hook)
+		After the bean properties are fully populated, the bean enters the initialization phase to execute setup logic.
+		Mechanism: Spring triggers this using the @PostConstruct annotation, 
+		the InitializingBean interface, or a custom initMethod.
+		
+	4. Ready for Use (Runtime Operations)
+		At this stage, the bean is completely configured, initialized, and stable.
+		Mechanism: It sits inside the ApplicationContext and 
+		is fully ready to handle business operations and application traffic.
+		
+	5. Graceful Destruction (Cleanup Hook)
+		When the application context is closed (such as shutting down the application), 
+		Spring performs an implicit cleanup to destroy the bean and free up resources.
+		Mechanism: It automatically calls the @PreDestroy annotation, which triggers the interface's destroy() method 
+		(or equivalent custom Java/XML destruction configurations) to safely close connections and execute cleanup tasks.
+
+https://docs.spring.io/spring-framework/docs/current/reference/html/core.html#beans-factory-lifecycle
+
+1. Auto Configuration (Convention over Configuration)
+	Auto configuration is the mechanism where Spring Boot automatically configures the application  
+	based on the dependencies present on the classpath.
+	How it works: If a starter dependency (like Spring Data JPA) is detected on the classpath, 
+	Spring Boot automatically configures essential components—such as the DataSource and EntityManager 
+	without requiring manual boilerplate configuration.
+
+2. Conditional Configuration
+	Conditional configuration allows the application to change its behavior dynamically based on rules, environments, or properties. 
+	It is the key to providing flexibility and avoiding bean definition conflicts by ensuring 
+	only the required beans are loaded into the ApplicationContext.
+	5 Essential Conditional Annotations:
+	1. @ConditionalOnProperty: 
+		Enables configuration or bean creation only when a specific property in application.properties matches a defined value.
+		
+	2. @ConditionalOnClass:	
+		Loads beans only if a specific class is present on the application classpath.
+		
+	3. @ConditionalOnBean: 
+		Targets bean-based conditions, loading a bean only if another specific bean is already registered in the context.
+		
+	4. @ConditionalOnMissingBean: 
+		Registers a fallback/default bean only if no other bean of that type has been defined.
+		
+	5. @ConditionalOnExpression: 
+		Evaluates complex SpEL (Spring Expression Language) expressions to decide whether to activate a configuration.
+		
+	Example:	app.greeting.language=ES in application.properties
+		
+		@Configuration
+		public class GreetingAutoConfiguration {
+		
+		    // Activated because app.greeting.language matches "ES"
+		    @Bean
+		    @ConditionalOnProperty(name = "app.greeting.language", havingValue = "ES")
+		    public GreetingService spanishGreetingService() {
+		        return new SpanishGreetingService();
+		    }
+		
+		    // Activated if the property matches a default setting or is missing
+		    @Bean
+		    @ConditionalOnMissingBean(GreetingService.class)
+		    public GreetingService defaultGreetingService() {
+		        return new DefaultGreetingService();
+		    }
+		}
+
+https://docs.spring.io/spring-boot/docs/current/reference/html/features.html#features.developing-auto-configuration
+
+Layers of Enterprise Spring Boot Projects:
+	1. Presentation Layer (Controller Layer)
+		This is the application's entry point, acting as the user interface or view facing the client.
+		Primary Function: 
+			It exposes REST APIs or web interfaces to handle incoming HTTP requests and return appropriate HTTP responses.
+		Key Behavior: 
+			It delegates business logic execution entirely to the service layer instead of processing logic itself.
+	
+	2. Service Layer (Business Logic Layer)
+		This layer acts as the brain of the application, encapsulating core business rules.
+		Primary Function: 
+			It orchestrates execution paths, processes business rules, and coordinates data fetching by making calls to the repository layer.
+	
+	3. Repository Layer (Data Access Layer)
+		This layer acts as the data gateway, dedicated entirely to communicating with external storage.
+		Primary Function: 
+			It integrates with database frameworks like Spring Data JPA or JDBC to execute critical CRUD operations.
+		Key Behavior: 
+			It interfaces directly with database tables and strictly returns raw Entities (never DTOs).
+	
+	4. Domain Layer (Model / Entity Layer)
+		This is an indispensable foundation layer that defines the structural blueprint of the application's data.
+		Primary Function: 
+			It contains JPA Entities that map directly to physical database tables.
+
+https://martinfowler.com/bliki/PresentationDomainDataLayering.html
+
+Advantages of Multi-Module Architecture:
+	Strict Separation of Concerns (Isolated Debugging): 
+		If a bug appears in the REST endpoints,  can isolate the focus completely to the Controller Module 
+		rather than sifting through the entire application codebase.
+		
+	Selectable Compilation (Faster Build Times): 
+		Instead of rebuilding the whole system, developers can selectively compile and 
+		test a specific, minute module. This vastly improves local development and CI/CD pipeline speeds.
+		
+	Streamlined Dependency Management: 
+		Individual modules only pull in the dependencies they strictly need. 
+		For example, the Model Module doesn't need to load web server dependencies, keeping the application lightweight.
+		
+	Code Reusability Across Projects: 
+		Modules can be decoupled and shared. For instance, a compiled User Module can be seamlessly imported 
+		and reused by entirely separate microservices, such as an Admin Portal or a Customer Application.
+		
+https://docs.spring.io/spring-boot/docs/current/maven-plugin/reference/htmlsingle/#getting-started.multi-module
+
+1. Core Packaging Strategies
+	Strategy A: Layered Packaging (By Technical Tier)
+		Code is grouped purely by its architectural function 
+		(e.g., com.company.project.controller, com.company.project.service).	
+	Strategy B: Feature-Based / Modular Packaging (Recommended for Scale)
+		Code is grouped strictly by its business domain or specific feature 
+		(e.g., com.company.project.user, com.company.project.order). 
+		Inside that feature package sits its own controller, service, and repository.
+
+2. Production Naming Conventions
+	Database Entities: 
+		Use singular names corresponding directly to the domain model (e.g., User, Employee).
+	Controllers: 
+		Suffix clearly with Controller (e.g., UserController).
+	Services: 
+		Use a clean interface (e.g., UserService) coupled with a distinct implementation suffix (e.g., UserServiceImpl).
+	Repositories: 
+		Suffix clearly with Repository (e.g., UserRepository).
+
+3. Mapping Component Annotations to Packages
+	Controller Package: 
+		Driven by @RestController / @Controller to handle client traffic.
+	Service Package: 
+		Managed by @Service to handle core business logic rules.
+	Repository Package: 
+		Driven by @Repository to execute database data access.
+	Mappers & Utils: 
+		Use specialized helper tools or generic @Component annotations for loose beans.
+
+https://docs.spring.io/spring-boot/docs/current/reference/html/using.html#using.structuring-your-code
+
+
+Dependency Injection:
+	1. The @Autowired Annotation
+		Field Injection: 
+			(Popular but less recommended) Directly annotating the private field.
+		Constructor Injection:
+			(The Most Recommended Way) Passing the dependency directly through the constructor. 
+			This ensures the dependency cannot be null at runtime.
+		Setter Injection: 
+			Injecting the dependency using a standard setter method and allocating it via the this keyword.
+	
+	2. Resolving Ambiguity: @Qualifier vs. @Primary
+		A. @Qualifier Annotation (Specifying the Exact Bean):
+			Use @Qualifier to explicitly name the exact bean instance  want to invoke by referencing its component name. 
+			This completely resolves bean selection ambiguity.
+		B. The @Primary Annotation (Setting the Default Choice):
+			If  want to designate a default bean fallback configuration when multiple 
+			matching beans exist, mark that chosen class with @Primary.
+
+https://docs.spring.io/spring-framework/docs/current/reference/html/core.html#beans-autowired-annotation
+
+Lazy Initialization and Dependency Resolution:
+	[Eager(Default)] ➔ App Startup ➔ Scans Components ➔ Instantiates All Beans ➔ App Ready ➔ User requests URL
+	[Lazy Strategy]  ➔ App Startup ➔ Scans Components ➔ Skips Lazy Beans ➔ App Ready ➔ User requests URL ➔ Instantiates Lazy Bean
+	
+	3 Ways to Enable Lazy Initialization:
+	1. At the Class/Field Level (@Lazy)
+		Can add the @Lazy annotation directly to a component or at the dependency injection site
+		
+	2. Globally via Configuration (application.properties)
+		Introduced in Spring Boot 2.2+,  can force every single bean in the entire application to use lazy initialization 
+		by default with a single property: spring.main.lazy-initialization=true
+		
+	3. Globally via Code (Programmatic Approach)
+		Can alter the startup behavior directly inside the main execution class by tweaking the SpringApplication instance 
+		before triggering the run method:  app.setLazyInitialization(true); 
+	
+https://docs.spring.io/spring-framework/docs/current/reference/html/core.html#beans-factory-lazy-init
+
+Circular Dependencies:
+	A circular dependency occurs when two or more beans depend on each other, creating an unresolvable loop 
+	(e.g., Bean A requires Bean B to finish instantiating, while Bean B simultaneously requires Bean A). 
+	During startup, Spring Boot fails to determine the bean creation order and 
+	immediately throws BeanCurrentlyInCreationException ("A requested bean is currently in creation").
+	
+	6 Strategies to Avoid or Resolve Circular Dependencies:
+		1. Constructor vs. Field Injection (Fail-Fast Detection)
+			Constructor-based injection is strict and enforces immutability and testability, 
+			causing the application to fail fast at startup if a cycle exists.
+			
+		2. Using the @Lazy Annotation (The Proxy Workaround)
+			Instead of instantiating the full bean immediately, Spring injects a lightweight proxy object. 
+			The actual initialization of the dependent bean is postponed until it is called for the first time at runtime.
+			
+		3. Utilizing Setter Injection
+			By switching from constructor injection to setter injection,  change when dependencies are wired. 
+			Spring can create the raw bean instances A and B first without their dependencies, and then inject those 
+			dependencies later via the setter methods once both objects exist in memory.
+			
+		4. Redesigning with a Mediator Class (Best Practice)
+			Introduce a third class—a Mediator—that absorbs the shared responsibility. 
+			Both Bean A and Bean B inject the Mediator, eliminating the direct loop between A and B entirely.
+			
+		5. Leveraging @PostConstruct for Late Initialization
+			By putting it inside a method annotated with @PostConstruct, that specific logic is guaranteed to run safely 
+			after all beans in the application context have been fully created.
+			
+		6. Splitting Configuration Classes
+			Splitting @Configuration class into separate configuration classes helps the Spring engine 
+			resolve their inter-dependencies independently and smoothly.
+			
+https://docs.spring.io/spring-framework/docs/current/reference/html/core.html#beans-factory-circular-dependencies
+
+RESTful Conventions and URI Design:
+	Golden Rules of URI Design
+	1. Use Nouns, Never Verbs
+		URLs represent resources (the what), not actions (the how). 
+		The action must be dictated strictly by the HTTP request method itself.
+		Bad Practice: GET /getUserById/1 (Contains a verb) 
+		Good Practice: GET /users/1 (Clean noun representation)
+	
+	2. Use Plural Nouns for Collections
+		Always use plural nomenclature when referring to resource endpoints to maintain uniform structural consistency.
+		Fetching a collection: GET /books (Retrieves a list of all books)
+		Fetching a unique instance: GET /books/10 (Retrieves a specific book by ID)
+	
+	3. Match the Correct HTTP Method to the Operation
+		GET: Retrieval of a resource (e.g., GET /users/1).
+		POST: Creation of a brand new resource (e.g., POST /users).
+		PUT: Modification by completely replacing the existing resource.
+		PATCH: Executing a partial update on specific resource fields.
+		DELETE: Completely removing the target resource.
+	
+	4. Differentiate Path Variables vs. Query Parameters
+		Path Variables (@PathVariable): 
+			Used strictly for Resource Identity to uniquely pinpoint a specific object (e.g., GET /users/{id}).
+		Query Parameters (@RequestParam): 
+			Used exclusively for Filtering, Sorting, and Pagination. They are optional and should never represent identity.
+			Filtering Example: GET /users?role=admin
+			Sorting Example: GET /products?sort=price&order=asc
+	
+	5. Handle Hierarchical Resources via Nesting
+		When resources have a strict, direct relationship, nest them cleanly within the URI. 
+		However, avoid deep chaining (keep it to a maximum of two levels to prevent messy, complex URIs).
+		Good Nesting: GET /users/5/orders (Fetches all orders belonging to user #5)
+
+https://restfulapi.net/resource-naming/
+
+Designing Reusable DTOs and Validation:
+	A Data Transfer Object (DTO) is a simple POJO class designed exclusively to carry data between application layers.
+	
+	DTOs instead of exposing internal database entities because it decouples presentation layer from storage layer, 
+	ensuring that internal database changes do not break external client applications
+	
+	[ Incoming Client Payload ] ➔  UserCreateRequest  ➔ [ Service Layer ] ➔ Enforces Business Rules & Database Save
+	[ Outgoing API Payload   ] ➔  UserResponseDTO     || [ Service Layer ] || Limits exposed fields (No passwords)
+	[ Shallow Representation ] ➔  UserSummaryDTO      || [ Service Layer ] || Used for nested resources / parent objects
+
+	UserCreateRequest: 
+		Captures fields required to build a resource (e.g., name, email, password). 
+		Includes high-security field validators.
+	UserResponseDTO: 
+		Dictates what the client can safely read back (e.g., id, name, email). 
+		Strictly omits credentials like passwords.
+	UserSummaryDTO: 
+		Contains minimized key data fields (e.g., just id and name) to execute DTO Composition
+		when nesting dependencies dynamically inside larger parent models (like an OrderDTO).
+
+	Implementing Standard DTO Validations:
+	Example: pom.xml
+		<dependency>
+		    <groupId>org.springframework.boot</groupId>
+		    <artifactId>spring-boot-starter-validation</artifactId>
+		</dependency>
+	
+		Step A: Annotate the Request DTO
+			public class UserCreateRequest {
+			    @NotBlank(message = "Name is required")
+			    private String name;
+			
+			    @Email(message = "Invalid email format")
+			    private String email;
+			
+			    @Size(min = 8, message = "Password must be at least 8 characters")
+			    private String password;
+			}
+		Step B: Activate Validation in the Controller
+			To force Spring Boot to process these rules, append the @Valid annotation inside the controller method definition. 
+			If verification fails, Spring immediately blocks execution and throws a 400 Bad Request exception.
+			@PostMapping("/users")
+			public ResponseEntity<UserResponseDTO> createUser(@Valid @RequestBody UserCreateRequest request) {
+			    // Execution will only proceed if the incoming payload passes all constraint criteria
+			    return ResponseEntity.status(HttpStatus.CREATED).body(userService.saveUser(request));
+			}
+		
+	Creating Advanced Custom Validations:
+		Step 1: Define the Custom Annotation (@ValidPassword)
+			@Target({ ElementType.FIELD, ElementType.PARAMETER })
+			@Retention(RetentionPolicy.RUNTIME)
+			@Constraint(validatedBy = PasswordValidator.class)
+			public @interface ValidPassword {
+			    String message() default "Password is too weak";
+			    Class<?>[] groups() default {};
+			    Class<? extends Payload>[] payload() default {};
+			}
+		Step 2: Implement the Validator Class (PasswordValidator)
+		public class PasswordValidator implements ConstraintValidator<ValidPassword, String> {
+		    @Override
+		    public boolean isValid(String password, ConstraintValidatorContext context) {
+		        if (password == null) return false;
+		        // Enforce strict criteria (e.g., uppercase, lowercase, numbers, special characters)
+		        return password.matches("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).+$");
+		    }
+		}
+		
+		// custom annotation goes here in DTO
+		@ValidPassword 
+    	private String password;
+
+Input Handling and Error Responses:
+	1. Types of REST API Client Inputs
+		Request Body (@RequestBody): 
+			Binds JSON data payloads directly to Java Objects (like a DTO) and triggers object constraint parsing.
+		Path Variables (@PathVariable): 
+			Unique, segment-based resource identifiers embedded within the endpoint URI layout.
+		Query Parameters (@RequestParam): 
+			Optional parameter markers attached to URLs for operations like query filtering or sorting.
+		Form Data: 
+			Encoded layout structures mapped from standard web interface fields.
+			Primarily designed for browser-native submissions(ex: html) and handling binary files 
+
+	2. The Global Exception Handler Engine
+		Instead of scattering try-catch blocks throughout service layer, Spring Boot relies on a Centralized Global Exception Handler. 
+		By decorating a class with @RestControllerAdvice, can intercept errors application-wide and format them uniformly.
+
+		[ Client Invalid Input ] ➔ Controller Layer (Fails @Valid check)
+		                                       ↓
+		                        Throws MethodArgumentNotValidException
+		                                       ↓
+		                 [ @RestControllerAdvice Global Handler ]
+		                                       ↓
+		                        Maps fields to custom APIError model
+		                                       ↓
+		[ Clean Uniform Response ] || Returns 400 Bad Request to Client
+
+	3. The Custom Global Exception Handler
+		Step A: Define a Consistent Error Schema (ApiError)
+		Step B: Build the Central Interceptor (GlobalExceptionHandler)
+
+	4. Defining App-Specific Custom Exceptions
+		Creating custom exceptions improves code readability within the business tiers. 
+		Instead of handling generic errors, can extend RuntimeException to signal precise domain issues
+
+https://docs.spring.io/spring-boot/docs/current/reference/html/web.html#web.servlet.spring-mvc.exception-handling
+
+
+
+		

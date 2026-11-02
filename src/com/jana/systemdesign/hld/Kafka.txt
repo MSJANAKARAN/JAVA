@@ -1,0 +1,394 @@
+                         Kafka Cluster
+                              |
+                   ┌──────────┼──────────┐
+                   ↓          ↓          ↓
+                  P0         P1         P2
+                   ↓          ↓          ↓
+                Broker     Broker     Broker
+                   |
+          ┌────────┼─────────┐
+          ↓        ↓         ↓
+       Group A   Group B   Group C
+          ↓        ↓         ↓
+    Notification Analytics  Fraud  (Consumer)
+    
+1. What is Kafka? ⭐⭐⭐⭐⭐
+	Kafka is a distributed event-streaming platform.
+	This provides asynchronous communication and buffering.
+	
+	Instead of: Service A -> Service B
+	you can use: Service A -> Kafka -> Service B
+       
+2. Topic ⭐⭐⭐⭐⭐
+	A topic is a logical stream/category of events.
+	
+	Examples: payment-events, order-events, notification-events
+	
+	For example, payment-events could contain:PAYMENT_CREATED, PAYMENT_COMPLETED, PAYMENT_FAILED
+
+3. Partition ⭐⭐⭐⭐⭐
+	A topic is divided into partitions.
+	Kafka splits a topic into multiple partitions distributed across different brokers (servers) in the cluster.
+
+	Topic: payment-events P0 P1 P2
+	
+	Partitions provide:
+		Parallelism
+		Scalability
+		Ordering within a partition
+4. Producer ⭐⭐⭐⭐⭐
+	Producer publishes records to Kafka.
+	
+	Example:
+		Payment Service
+		      ↓
+		Producer
+		      ↓
+		payment-events
+	
+	Event:
+		{
+		  "eventId": "EV123",
+		  "paymentId": "PAY456",
+		  "status": "SUCCESS",
+		  "amount": 1000
+		}
+
+5. How Does Kafka Choose a Partition?
+	When a producer application publishes a message to an Apache Kafka topic, the Kafka Producer Client Library 
+	determines which specific partition the message lands in using a component called the Partitioner.
+	The choice depends entirely on whether a Message Key was provided and the version of Kafka being used.
+	
+	A producer can: Specify partition
+	or provide a: Key
+	For keyed records, Kafka uses the key to determine a partition under the configured partitioner.
+
+	Example: key = paymentId
+	Conceptually:
+		hash(paymentId)
+		      ↓
+		partition
+
+	This is important because the same key can be routed consistently to the same partition 
+	while the partitioning scheme remains unchanged.
+
+6. Ordering ⭐⭐⭐⭐⭐
+	Kafka guarantees ordering within a partition, not across an entire multi-partition topic.
+	Example:
+		P0:
+			Order Created
+			Order Paid
+			Order Shipped
+	Correct order is maintained.
+		But:
+			P0 → Event A
+			P1 → Event B
+			P2 → Event C
+		there is no global ordering guarantee across P0/P1/P2.
+	
+	Interview answer
+		Kafka guarantees ordering within a partition; for per-entity ordering, 
+		use a suitable key so related events go to the same partition.
+
+7. Consumer ⭐⭐⭐⭐⭐
+	Consumer reads messages from Kafka.
+		Kafka
+		  ↓
+		Consumer
+		  ↓
+		Process event
+	Example:
+		notification-service
+		      ↓
+		Consume PAYMENT_COMPLETED
+		      ↓
+		Send notification
+
+8. Consumer Group ⭐⭐⭐⭐⭐
+	This is one of the most important Kafka concepts.
+	Suppose:
+		Topic
+		 ├── P0
+		 ├── P1
+		 └── P2
+	
+	Consumer Group:
+		Group A
+		 ├── C1
+		 ├── C2
+		 └── C3
+	
+	Kafka assigns partitions among consumers in the same group.
+	
+	Example:
+		P0 → C1
+		P1 → C2
+		P2 → C3
+	Key rule => Within one consumer group, a partition is consumed by only one consumer at a time.
+	This enables horizontal scaling.
+
+9. Multiple Consumer Groups ⭐⭐⭐⭐⭐
+	This is where Kafka becomes powerful.
+	                  Kafka
+	                    |
+	             payment-events
+	             /      |       \
+	            /       |        \
+	           ↓        ↓         ↓
+	      Group A    Group B    Group C
+	         ↓          ↓          ↓
+	 Notification   Analytics    Fraud
+	
+	Each group gets its own consumption of the topic.
+	So, Notification Group can process: PAYMENT_COMPLETED
+	while, Analytics Group also processes the same event independently.
+
+10. Offset ⭐⭐⭐⭐⭐
+	Kafka tracks a consumer's position using an offset.
+	Example: Partition P0
+			   Offset
+				  0 → Event A
+				  1 → Event B
+				  2 → Event C
+				  3 → Event D
+	
+	Consumer has processed: 0 1 2
+	Current position: 3
+	If consumer crashes, it can resume from its committed position.
+	
+11. Kafka Replication ⭐⭐⭐⭐⭐
+	Kafka partitions can be replicated across brokers.
+	Example:
+		Partition P0
+		
+		Broker 1 → Leader
+		Broker 2 → Replica
+		Broker 3 → Replica
+	
+	If the leader fails:
+		Broker 1 ❌
+		     ↓
+		Replica promoted
+		     ↓
+		New leader
+	Replication provides fault tolerance.
+
+12. Kafka Retry ⭐⭐⭐⭐⭐
+	Suppose:
+		Consumer
+		   ↓
+		SMS Provider
+		   ↓
+		Timeout ❌
+	You shouldn't immediately lose the event.
+	
+	Possible design:
+		Main Topic
+		    ↓
+		Consumer
+		    ↓
+		Processing
+		    ↓
+		Failure
+		    ↓
+		Retry mechanism
+		    ↓
+		Process again
+	
+	Common approaches include:
+		Retry topics
+		Delayed retry topics
+		Application retry
+		Backoff
+
+13. Exponential Backoff ⭐⭐⭐⭐⭐
+	Exponential backoff is an error-handling algorithm that progressively increases the 
+	wait time between consecutive retries of a failed operation.
+	Instead of:
+		Retry
+		Retry
+		Retry
+		Retry
+	
+	use:
+		1 sec
+		2 sec
+		4 sec
+		8 sec
+		16 sec
+	
+	Exponential Backoff + Jitter to prevent many consumers retrying simultaneously.
+	
+	Without Jitter (Synchronized Waves - BAD):
+		Time 1s: ──💥💥💥💥💥──► [Database Crashes]
+		Time 2s: ──💥💥💥💥💥──► [Database Stays Dead]
+	
+	With Jitter (Randomized Spread - GOOD):
+		Time 1.2s: ─💥─►
+		Time 1.7s: ───💥─►      [Database Has Time to Recover]
+		Time 2.1s: ─────💥─►
+	
+14. DLQ — Dead Letter Queue ⭐⭐⭐⭐⭐
+	Suppose:
+		Message ─► Processing ─► FAIL ─► Retry ─► FAIL ─► Retry ─► FAIL ─► DLQ
+	DLQ stores messages that could not be successfully processed after the configured retry policy.
+	
+	Then engineers can:
+		Inspect
+		Fix issue
+		Replay
+		Discard
+	Important:  DLQ is not automatically the answer for every failure. 
+				Transient failures should normally be retried first.
+
+15. Kafka + Idempotency ⭐⭐⭐⭐⭐
+	Kafka consumers may process a message more than once due to retries/restarts or other delivery/processing scenarios.
+	
+	Suppose: PAYMENT_COMPLETED
+	Consumer receives it.
+	It sends: SMS
+	Then crashes before recording its processing state.
+	Message may be processed again.
+	Potential result:
+		SMS
+		SMS ❌
+	Therefore consumers should be idempotent.
+
+16. Kafka Does NOT Mean Exactly Once
+	Kafka supports delivery and processing semantics, but end-to-end exactly-once business effects 
+	require transactional design and idempotency across the whole workflow.
+
+17. Kafka + Database Problem ⭐⭐⭐⭐⭐
+	Payment Service
+	     ├── Save payment to DB
+	     └── Publish Kafka event
+	
+	What if: DB save ✅ , Kafka publish ❌
+		Database → Payment exists
+		Kafka    → Event missing
+	This is a classic distributed consistency problem.
+
+18. Outbox Pattern ⭐⭐⭐⭐⭐
+	Transactional Outbox Pattern is a crucial cloud architecture pattern that solves a major problem in distributed 
+	systems and microservices: ensuring data consistency between your database updates and message publishing.
+		Payment Service
+		      ↓
+		Database Transaction
+		   ┌───────────────┐
+		   │ Payment       │
+		   │ Outbox Event  │
+		   └───────────────┘
+		          ↓
+		      Outbox Relay
+		          ↓
+		        Kafka
+	
+	Payment and outbox event are persisted in the same database transaction.
+	Then a relay publishes the event.
+	If Kafka is temporarily down:
+		Outbox event remains
+		       ↓
+			Retry later
+		       ↓
+			 Kafka
+
+19. Redis vs Kafka ⭐⭐⭐⭐⭐
+	Redis → "Give me the current value quickly."
+	Kafka → "Tell me what events happened."
+	
+	| Redis                          | Kafka                                |
+	| ------------------------------ | ------------------------------------ |
+	| Primarily in-memory data store | Distributed event-streaming platform |
+	| Very fast key-based access     | Durable ordered event log            |
+	| Cache/session/counters         | Async event communication            |
+	| TTL                            | Retention                            |
+	| Usually retrieve current value | Consume event history                |
+	| Rate limiting                  | Event processing                     |
+	| Distributed coordination       | Service decoupling                   |
+
+20. Kafka vs REST
+	REST:
+		Service A
+		    ↓ HTTP
+		Service B
+		    ↓
+		Response
+	Usually synchronous. Service A waits for Service B.
+	
+	Kafka:
+		Service A -> Kafka -> Service B
+	Asynchronous. Service A can often continue after successfully publishing the event.
+
+21. Kafka Scaling
+	Suppose:
+		Topic P0 P1 P2
+		Consumer Group C1 C2 C3
+	Kafka can process partitions in parallel:
+		P0 → C1
+		P1 → C2
+		P2 → C3
+	
+	If you increase consumers:
+		P0 P1 P2
+		C1 C2 C3 C4 C5
+	some consumers will have no partition assigned.
+	
+	Key rule => Maximum useful parallelism within a consumer group is bounded by the number of partitions.
+		Therefore partition count should be planned based on expected throughput and parallelism needs.
+
+22. Kafka Consumer Failure
+	Suppose: P0 → C1
+		C1 crashes.
+	Kafka can rebalance: P0 → C2 assuming another consumer in the group is available.
+	This is called Consumer group rebalancing
+
+23. Kafka Hot Partition
+	A hot partition is a specific type of architectural bottleneck that occurs when a disproportionately large volume of read  
+	or requests hits a single data partition in a distributed system, while other partitions sit idle.
+	
+	Suppose partitioning key is: userId
+	and one user generates enormous traffic.
+	Then:
+		P0 → 90% traffic
+		P1 → 5%
+		P2 → 5%
+	P0 becomes a bottleneck.
+	
+	This is a Hot partition
+	Partition-key selection is therefore important.
+	For financial systems, you must balance:Ordering requirement vs Load distribution
+
+24. Kafka Retention
+	Kafka doesn't simply delete a message after one consumer reads it.
+	Messages remain according to the topic's retention configuration.
+	Example: Kafka Topic
+				Event A
+				Event B
+				Event C
+	Consumer Group A reads them.
+	Later: Consumer Group B can independently consume the retained records.
+	This is fundamentally different from a traditional queue where a message is typically removed once acknowledged by its consumer.
+
+25. Redis + Kafka Together ⭐⭐⭐⭐⭐
+                    Payment Service
+                          |
+                    ┌─────┴─────┐
+                    ↓           ↓
+                  Redis      PostgreSQL
+                    |           |
+              Cache/Rate       |
+                Limit           ↓
+                           Outbox Event
+                                ↓
+                              Kafka
+                                ↓
+                       Notification Service
+                                |
+                              Redis
+                                |
+                         Provider / SMS
+Each technology has a different responsibility.
+	PostgreSQL → Source of truth
+	Redis → Fast temporary/access-optimized state
+	Kafka → Durable asynchronous event stream
+

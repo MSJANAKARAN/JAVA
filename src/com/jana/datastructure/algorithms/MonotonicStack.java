@@ -21,21 +21,20 @@ public class MonotonicStack {
 //		Next Greater Element
 		int[] arr = { 2, 1, 5, 3 };
 		System.out.println("Next Greater Element: " + Arrays.toString(nextGreaterElement(arr)));
-		System.out.println("Next Greater Element(Effective right to left): " + Arrays.toString(nextGreaterElement(arr)));
+		System.out.println("Next Greater Element(Effective right->left): " + Arrays.toString(nextGreaterElement(arr)));
 
 //		Min Stack
 //		goal is to design a stack that supports push, pop, top, and retrieving the minimum element in O(1) constant time.
 
 		MinStack stack = new MinStack();
-		
+
 		stack.push(4);
 		stack.push(2);
 		stack.pop();
 		stack.push(3);
 		stack.push(7);
-		System.out.println("Stack minimum: "+stack.getMin());
-		System.out.println("Stack top: "+stack.top());
-
+		System.out.println("Stack minimum: " + stack.getMin());
+		System.out.println("Stack top: " + stack.top());
 
 	}
 
@@ -73,25 +72,25 @@ public class MonotonicStack {
 		}
 		return result;
 	}
-	
+
 	static int[] nextGreaterElement1(int arr[]) {
 		int[] result = new int[arr.length];
 
 		Deque<Integer> stack = new ArrayDeque<>();
 
-		for(int i=arr.length-1;i>=0;i--) {
-			while(!stack.isEmpty() && stack.peek()<=arr[i]) {
+		for (int i = arr.length - 1; i >= 0; i--) {
+			while (!stack.isEmpty() && stack.peek() <= arr[i]) {
 				stack.pop();
 			}
-			if(!stack.isEmpty()) {
-				result[i]=stack.peek();
-			}else {
-				result[i]=-1;
+			if (!stack.isEmpty()) {
+				result[i] = stack.peek();
+			} else {
+				result[i] = -1;
 			}
 			stack.push(arr[i]);
 		}
 		return result;
-	
+
 	}
 
 	static class MinStack {
@@ -116,7 +115,7 @@ public class MonotonicStack {
 		public int getMin() {
 			return minStack.peek();
 		}
-		
+
 		public int top() {
 			return stack.peek();
 		}

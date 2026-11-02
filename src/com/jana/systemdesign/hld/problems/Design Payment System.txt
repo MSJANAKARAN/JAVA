@@ -1,0 +1,219 @@
+Design a payment system that allows a user to make payments using:
+    Bank account
+    Debit/credit card
+    UPI/wallet
+    Other payment methods
+
+The system should:
+    Create payments
+    Process payments through external payment providers
+    Handle success/failure
+    Prevent duplicate charges
+    Handle retries and timeouts
+    Track payment status
+    Support refunds
+    Maintain an audit trail
+    Scale to millions of transactions
+
+Functional Requirements:
+    Core requirements
+        Create payment
+        Process payment
+        Check payment status
+        Handle success/failure
+        Retry failed operations safely
+        Prevent duplicate payments
+        Refund payment
+        Maintain transaction history
+    Optional
+        Payment reconciliation
+        Multiple payment providers
+        Fraud detection
+        Currency conversion
+        Merchant settlements
+        Payment notifications
+        Dispute/chargeback handling
+
+    For an interview, explicitly say:
+        I'll focus on payment creation, processing, idempotency, status management, refunds and failure recovery.
+
+Non-Functional Requirements:
+    Payment systems prioritize correctness and durability over extreme low latency.
+    | Requirement        | Why                                    |
+    | ------------------ | -------------------------------------- |
+    | High availability  | Payments must be available             |
+    | Strong consistency | Money cannot be duplicated/lost        |
+    | Durability         | Payment records cannot disappear       |
+    | Idempotency        | Prevent duplicate charges              |
+    | Low latency        | Payment response should be fast        |
+    | Scalability        | Millions of payments                   |
+    | Security           | Financial data is sensitive            |
+    | Auditability       | Every money movement must be traceable |
+
+Payment Lifecycle:
+                 CREATE
+                   │
+                   ▼
+                CREATED
+                   │
+                   ▼
+              PROCESSING
+              /    |     \
+             /     |      \
+            ▼      ▼       ▼
+        SUCCESS  FAILED   UNKNOWN
+           │                │
+           │                ▼
+           │          Reconciliation
+           │                │
+           │          ┌─────┴─────┐
+           │          ▼           ▼
+           │       SUCCESS      FAILED
+           │
+           ▼
+        REFUND
+           │
+           ▼
+    REFUND_PROCESSING
+           │
+           ▼
+       REFUNDED
+
+Architecture:
+                    ┌──────────────┐
+                    │    Client    │
+                    └──────┬───────┘
+                           │
+                           ▼
+                    ┌──────────────┐
+                    │ Load Balancer│
+                    └──────┬───────┘
+                           │
+                           ▼
+                    ┌──────────────┐
+                    │ API Gateway  │
+                    └──────┬───────┘
+                           │
+                           ▼
+                ┌─────────────────────┐
+                │   Payment Service   │
+                └──────────┬──────────┘
+                           │
+              ┌────────────┼─────────────┐
+              │            │             │
+              ▼            ▼             ▼
+         ┌─────────┐  ┌────────-─┐  ┌────────────┐
+         │ Redis   │  │PostgreSQL│  │   Kafka    │
+         └─────────┘  └───────-──┘  └──── ┬──────┘
+                                          │
+                   ┌──────────────────────┼─────────────────────┐
+                   ▼                      ▼                     ▼
+                 Notification       Reconciliation          Payment 
+                 Service            Service                 Service
+                                                                │
+                                                                ▼
+                                                    ┌──────────────────┐
+                                                    │ Payment Provider │
+                                                    │   / Bank / UPI   │
+                                                    └──────────────────┘
+                                                            |
+                                                    ┌───────┴────────┐
+                                                    ▼                ▼
+                                                Webhook        Status API
+                                                    |                |
+                                                    └───────┬────────┘
+                                                            ▼
+                                                    Payment Service
+
+                                                    Reconciliation
+                                                            |
+                                                            ▼
+                                                    Provider APIs
+
+Design Patterns:
+    | Pattern               | Usage                              |
+    | --------------------- | ---------------------------------- |
+    | Strategy              | Different payment providers        |
+    | Adapter               | Adapt provider APIs                |
+    | Factory               | Select provider                    |
+    | State                 | Payment lifecycle                  |
+    | Outbox                | Reliable event publishing          |
+    | Saga                  | Distributed payment/order workflow |
+    | Circuit Breaker       | Provider failures                  |
+    | Retry                 | Transient failures                 |
+    | Observer/Event-driven | Payment events                     |
+    | Repository            | Database abstraction               |
+
+Interview Explanation:
+    I would design the payment system around five key concerns: 
+    idempotency, strong consistency, reliability, security, and handling failures from external payment providers.
+
+    The major components would be an API Gateway, stateless Payment Service instances, PostgreSQL as the source of truth, 
+    Redis for caching, Kafka for asynchronous events, and external payment providers such as banks or payment gateways.
+
+    The client would call POST /payments with the amount, currency, order ID, payment method, and an idempotency key. 
+    The API Gateway handles authentication, rate limiting and routing. 
+    The Payment Service validates the request and first checks the idempotency key.
+
+    The idempotency key is critical because clients can retry requests due to network failures. 
+    I would enforce a unique constraint on the idempotency key in PostgreSQL 
+    so the same logical payment cannot create multiple charges.
+
+    The payment would then move through a state machine such as CREATED → PROCESSING → SUCCESS/FAILED. 
+    I would explicitly keep a processing or unknown state because an external provider can successfully charge the customer 
+    while our network request times out. In that case, we must not blindly retry the payment or mark it as failed.
+
+    For provider integration, I would define a PaymentProvider interface and implement adapters for different providers. 
+    This follows Strategy/Adapter principles and allows us to support 
+    multiple providers without coupling the core Payment Service to one vendor.
+
+    For external provider failures, I would use retries with exponential backoff and jitter for safe transient operations. 
+    Payment retries must use provider-supported idempotency keys. 
+    I would also use circuit breakers to prevent repeatedly calling an unhealthy provider. 
+    However, I would not blindly fail over an uncertain payment to another provider 
+    because the first provider may already have processed it.
+
+    The payment provider can also send webhooks. The webhook endpoint would verify the provider signature, 
+    validate the payment ID, amount and state transition, and update the payment idempotently. 
+    Duplicate webhooks should be harmless.
+
+    For asynchronous processing, I would publish events such as PAYMENT_COMPLETED through Kafka. 
+    However, I would avoid directly updating the database and publishing Kafka as two independent operations 
+    because that creates a dual-write problem. Instead, I would use the Transactional Outbox pattern: the payment update 
+    and outbox event are committed in the same database transaction, and a separate publisher sends the event to Kafka.
+
+    Downstream services such as Order, Notification, Analytics and Loyalty can consume these events independently.
+
+    For payment status uncertainty, I would have a reconciliation service periodically compare our payment 
+    state with the provider's status. For example, if our system says PROCESSING 
+    but the provider says SUCCESS, reconciliation can safely update the payment.
+
+    PostgreSQL would be the source of truth because payment records require ACID transactions, durability and constraints. 
+    Redis can be used for frequently accessed payment status or configuration, but it should not be the authoritative payment store.
+
+    The Payment Service would be stateless, allowing horizontal scaling behind a load balancer. 
+    PostgreSQL can use replication and eventually partitioning or sharding as transaction volume grows. 
+    Kafka and Redis can also be deployed in clustered configurations.
+
+    For security, all communication should use TLS, sensitive payment information should be tokenized 
+    rather than unnecessarily stored, webhook signatures should be verified, access should be 
+    authenticated and authorized, and sensitive information should never be written to logs. 
+    PCI DSS requirements must be considered for card-processing flows.
+
+    Finally, I would monitor payment success and failure rates, provider latency, processing/unknown payments, 
+    webhook failures, reconciliation mismatches, Kafka lag and P95/P99 latency.
+
+    The most important design principle is that payment systems should assume at-least-once delivery and possible network failures, 
+    then achieve effectively-once business behavior using idempotency keys, database constraints, 
+    safe state transitions, provider idempotency, and reconciliation.
+
+
+
+
+
+
+
+
+
+
+

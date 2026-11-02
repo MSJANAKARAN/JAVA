@@ -1,0 +1,186 @@
+Preparing the Java Application (JAR Generation)
+	Gradle: 
+		./gradlew bootJar
+	Maven: 
+		./mvnw clean package
+
+Dockerfile Script Layout
+	A Dockerfile functions as a plain text instruction blueprint that tells the Docker Engine exactly how to build and layer your static image.
+	
+	• The Standard Blueprint Structure:
+		• Base Image Definition: 
+			Pulls in a validated open-source execution runtime framework environment using the FROM tag (e.g., FROM openjdk:17).
+		• File Deployment Mapping: 
+			References the local Maven storage output to mirror files into the container using the COPY tag (e.g., COPY target/app.jar app.jar).
+		• Execution Entry Point: 
+			Dictates the concrete initialization command that launches the microservice on container boot using the ENTRYPOINT array list.
+
+	For advanced enterprise pipelines, developers can leverage a multi-stage layout. 
+
+Image Compilation & Container Launch
+	Step 1: Compiling the Image Template (docker build)
+	
+		docker build -t java-docker-demo .
+
+	Note: The closing dot . acts as a crucial mapping token, pointing the framework engine directly to the active root terminal folder workspace to find the Dockerfile.
+
+	Step 2: Launching the Active Container (docker run)
+
+		docker run --rm java-docker-demo
+
+	--rm: An operational cleanup utility flag that automatically deletes the underlying container instance footprint 
+		from your local tracking list the moment execution terminates.
+
+Key Benefits of Using Docker for Spring Boot
+	• Package Once, Run Anywhere: 
+		Docker encapsulates the entire application stack into a portable container package that operates identically across any system runtime.
+	
+	• Embedded Server Deployment: 
+		Bypasses any need for complex external server configurations since the container packages everything necessary to run out of the box.
+	
+	• Microservices Synergy: 
+		Provides highly agile, consistent environments that fit perfectly into continuous integration and continuous deployment (CI/CD) automation tracks.
+
+Prerequisites: 
+	Building the workflow requires Java 17+, an active local running Docker daemon, and a Spring Boot project successfully compiled into a standalone execution package.
+
+When deploying a containerized web application, developers must coordinate traffic routing across two distinct port boundaries:
+	• The Application Port: 
+		The internal web framework port defined inside your standard application.properties configuration sheet (set to Port 8080).
+	• The Container Port: 
+		The isolated network layer exposed directly by the container blueprint inside the Dockerfile script text (using the framework instruction: EXPOSE 8080).
+
+Image Compilation & Container Port Mapping 
+	Compiling the Image Blueprint (docker build):
+	
+		docker build -t spring-boot-docker-demo .
+	
+	This creates a custom tagged template image using the structural context of the local terminal root folder directory (.).
+	
+	Launching with Live Port Mapping (docker run): docker run -p <Host Port>:<Container Port> <image>
+		
+		docker run -p 8080:8080 spring-boot-docker-demo
+
+	-p <Host Port>:<Container Port>. => The left parameter maps your host machine's public application port, 
+										while the right parameter routes straight down into the secure internal container port framework.
+
+Managing Environment Variables at Runtime
+	Use the -e or --env flag inside a execution sequence string to inject keys dynamically without hardcoding data vectors 
+	(like database credentials, encryption tokens, or access links):
+		
+		docker run -e SPRING_PROFILES_ACTIVE=prod -e DB_URL=jdbc:mysql://host:3306/db my-app
+
+Diagnostic Commands:
+	Command Framework                            Tactical Diagnostic Action and Application Flow Mapping
+	
+	docker ps -a                                 Lists all local container footprints (both active and terminated) to pinpoint immediate startup failure crashes.
+	
+	docker logs <container-id>                   Extracts and pipes continuous internal framework execution streams to trace unhandled application code exceptions.
+	
+	docker inspect <container-id>                Pulls the absolute, comprehensive system metadata block of a container to verify environment values and network bounds.
+	
+	docker exec -it <container-id> /bin/bash     Spins up a live, interactive terminal shell bridge inside a running container to explore the file system and manual scripts directly.
+
+https://docs.docker.com/develop/develop-images/dockerfile_best-practices/
+https://spring.io/guides/gs/spring-boot-docker/
+https://docs.docker.com/compose/environment-variables/
+https://code.visualstudio.com/docs/containers/debug-common
+
+Multi-Stage Builds Optimization
+	Multi-stage builds allow developers to declare multiple FROM statements within a single Dockerfile to separate the heavy compilation workspace 
+	from the final lightweight execution runtime.
+
+	It cleanly isolates the Build Environment (where compilation occurs) from the Run Environment (where the app executes).
+	
+	• Stage 1: The Build Stage
+		• Uses a heavy base image like Maven to establish a working directory.
+		
+		• Copies your application source code into the container.
+		
+		• Runs compilation goals (e.g., mvn clean package) to generate the standalone .jar file artifact.
+	
+	• Stage 2: The Run Stage
+		• Starts fresh with a minimalistic runtime base image (e.g., OpenJDK-slim or standard Java runner).
+		
+		• Uses a clean copy step to pluck only the final built .jar file from the target folder of the Build Stage.
+		
+		• Completely excludes raw source files, local build scripts, and bulky Maven compiler tools from the final footprint.
+		
+		• Defines the execution entry point (using the java binary command array) to launch the compiled package.
+
+Strategic Base Image Selection
+	Choosing a base image shapes the physical container's size, initialization speed, and security vulnerability layout.
+	
+	• Full OS Images (Ubuntu, Debian): 
+		High resource footprint (~600MB+). 
+		They offer an environment-rich set of pre-installed troubleshooting tools but introduce higher security vulnerabilities.
+	
+	• Slim Images (Debian-Slim, Ubuntu-Slim): 
+		Moderate footprint (~250MB). 
+		They strip away secondary system archives, providing a faster, cleaner runtime balance for traditional dependencies.
+	
+	• Alpine Linux Images (Eclipse-Temurin Alpine): 
+		Ultra-minimalist library footprint (~70MB). 
+		They are highly secure and compact but can occasionally face software compatibility issues due to alternative internal C-standard libraries (musl instead of glibc).
+	
+	• Production Best Practice: 
+		Always name your stages clearly using the AS keyword (e.g., FROM maven:3.9 AS build), use a specialized .dockerignore file to drop unnecessary file tracking caches from context, 
+		and prefer slim or Alpine-based official images for deployment layers.
+
+	Implementation Tips
+		• Use the AS Keyword: 
+			Always label your initial compilation blocks clearly (e.g., FROM maven:3.9 AS build) so you can reference them easily in later stages.
+		
+		• Minimize the Runtime Layer: 
+			Stick to micro-sized execution layers like openjdk-slim or Alpine variants for the running image.
+		
+		• Leverage a .dockerignore File: 
+			Drop heavy local caches, system logs, and hidden IDE directories before copying content over to prevent inflating the initial build context.
+
+Base Image Footprint Comparison
+	Image Variant     Average Size Footprint    Architectural Trade-offs & Production Use
+
+	Standard OpenJDK  ~600 MB                   Contains the full JDK stack; ideal for compiling code but too bloated for deployment.
+
+	OpenJDK Slim      ~250 MB                   Strips out heavy OS tooling; serves as a highly compatible, reliable production environment.
+
+	Eclipse Alpine    ~70 MB                    Extremely compact and safe; perfect for cloud-native microservices with low memory limits.
+
+https://docs.docker.com/develop/develop-images/multistage-build/
+https://docs.docker.com/develop/develop-images/baseimages/
+https://spacelift.io/blog/docker-security
+
+Multi-Container Orchestration (Docker Compose)
+	Docker Compose is a declarative tool that allows developers to define, network, configure, and automate multi-container applications (such as a Spring Boot app linked to a database) 
+	using a single docker-compose.yml file format.
+	
+	• Core YAML Section Anatomy:
+		• version: Specifies the exact runtime file format compatibility layer (e.g., version: '3.8').
+		
+		• services: Defines the individual isolated container components that comprise the application cluster.
+		
+		• networks: Provisions isolated virtual network channels to allow containers to discover and securely communicate with each other.
+		
+		• volumes: Explicitly declares persistent file structures across the service footprint.
+	
+	• Essential Lifecycle Commands:
+		• docker-compose up: 
+			Automatically provisions networks, volumes, and builds/starts all declared service containers simultaneously with one terminal entry.
+		
+		• docker-compose down: 
+			Gracefully halts execution and destroys the runtime container footprint to clean up local resources.
+
+Spring Boot & PostgreSQL Container Integration
+	PostgreSQL serves as a highly resilient, enterprise-grade open-source object-relational database management system optimized for transactions and advanced features like JSON indexing.
+	
+	spring.datasource.url=jdbc:postgresql://<container-host>:5432/mydb
+	spring.datasource.username=postgres
+	spring.datasource.password=securepass
+	spring.jpa.hibernate.ddl-auto=update
+	spring.jpa.show-sql=true
+
+https://docs.docker.com/compose/compose-file/
+https://spring.io/guides/gs/accessing-data-jpa/
+https://docs.docker.com/storage/volumes/
+https://docs.docker.com/compose/reference/up/#scale-services
+
