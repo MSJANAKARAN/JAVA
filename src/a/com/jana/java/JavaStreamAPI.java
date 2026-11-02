@@ -7,6 +7,7 @@ import java.util.IntSummaryStatistics;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -148,8 +149,9 @@ public class JavaStreamAPI {
 		System.out.println("\n------ Stream String.chars() vs String.codePoints() ------");
 //		String.chars() operates on 16-bit UTF-8/UTF-16 code units, which can break modern characters apart	
 //		String.codePoints() handles full Unicode characters (including emojis and rare symbols)
-		String s = "Hello";
+		String s = "Hello 😊😊😊";
 		s.chars().forEach(c -> System.out.print((char) c)); // Return type IntStream
+		System.out.println();
 		s.codePoints().forEach(c -> System.out.print((char) c)); // Return type IntStream(Handles Emojis)
 
 		System.out.println("\n========== Intermediate vs Terminal Operations ==========");
@@ -162,7 +164,8 @@ public class JavaStreamAPI {
 		System.out.println("\n------ sorted() reverse------");
 		List<Integer> list3 = num1.stream().sorted(Collections.reverseOrder()).collect(Collectors.toList());
 		System.out.println(list3);
-		List<Integer> list4 = Arrays.stream(num2).sorted().boxed().collect(Collectors.toList());
+		List<Integer> list4 = Arrays.stream(num2).boxed().sorted(Collections.reverseOrder())
+				.collect(Collectors.toList());
 		System.out.println(list4);
 
 		System.out.println("\n------ Objects sorted() ------");
@@ -221,6 +224,7 @@ public class JavaStreamAPI {
 
 		System.out.println("\n------ collect() Collectors.groupingBy() ------");
 //		It groups elements based on a key. similar to SQL: GROUP BY
+//		Grouping By convert stream to Map
 		Map<String, List<Account>> map3 = account2.stream().collect(Collectors.groupingBy(Account::getAccountNumber));
 		System.out.println(map3);
 
@@ -239,6 +243,7 @@ public class JavaStreamAPI {
 		System.out.println(result2);
 
 		System.out.println("\n------ collect() Map operations ------");
+//		get the count of elements present
 		Map<Character, Long> result3 = input.stream()
 				.collect(Collectors.toMap(Function.identity(), a -> (long) 1, Long::sum));
 		System.out.println(result3);
@@ -246,17 +251,21 @@ public class JavaStreamAPI {
 //		get the top K characters based on their frequency(result1)
 		Map<Character, Long> res = result1.entrySet().stream()
 				.sorted(Map.Entry.<Character, Long>comparingByValue().reversed()).limit(2)
+//				.sorted(Map.Entry.comparingByValue(Comparator.reverseOrder())).limit(2)
+//				.sorted((e1, e2) -> e2.getValue().compareTo(e1.getValue())).limit(2)
 				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> a, LinkedHashMap::new));
 //				.collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue(), (a, b) -> a, LinkedHashMap::new)); //without method reference
 
+//		Map.Entry::getKey - Extract the key
+//		Map.Entry::getValue - Extract the value
 		System.out.println(res);
 //		map.entrySet().stream()
 //		comparingByValue() - Sort by value ascending
 //		comparingByKey() - Sort by key ascending (similar way)
 
 		result1.entrySet().stream().sorted(Map.Entry.comparingByValue()).forEach(System.out::print);
-//		comparingByValue() - Sort by value descending
-//		comparingByKey() - Sort by key descending (similar way)
+//		comparingByValue().reversed() - Sort by value descending
+//		comparingByKey().reversed() - Sort by key descending (similar way)
 
 		System.out.println();
 		result1.entrySet().stream().sorted(Map.Entry.<Character, Long>comparingByKey().reversed())
@@ -264,8 +273,7 @@ public class JavaStreamAPI {
 		System.out.println();
 		result1.entrySet().stream().sorted(Map.Entry.<Character, Long>comparingByValue().reversed())
 				.forEach(System.out::print);
-//		Map.Entry::getKey - Extract the key
-//		Map.Entry::getValue - Extract the value
+
 		System.out.println("\n------ collect() Collectors.groupingBy() + summingDouble() ------");
 		Map<String, Integer> map5 = account2.stream()
 				.collect(Collectors.groupingBy(Account::getAccountNumber, Collectors.summingInt(Account::getBalance)));
@@ -331,6 +339,28 @@ public class JavaStreamAPI {
 //		fallback default value if the stream ends up being empty
 		System.out.println(names1.stream().filter(name -> name.startsWith("Z")).findFirst().orElse("Unknown"));
 		System.out.println(Arrays.stream(num2).max().orElse(0));
+
+		System.out.println("\n------ collect() Collectors.maxBy() ------");
+//		Collectors.maxBy and Collectors.minBy are downstream collectors used to find the maximum or minimum element 
+//		within a stream based on a specific sorting rule (Comparator).
+//		Finding the single highest account balance (Global)
+		Optional<Account> topEarner = account2.stream().max(Comparator.comparingDouble(Account::getBalance));
+		System.out.println(topEarner.get());
+
+//		Finding the highest balance per account (Local). maximum balance amount for each account[like maximum salary for each department]
+		Map<String, Optional<Account>> topEarnerPerAccount1 = account2.stream().collect(Collectors.groupingBy(
+				Account::getAccountNumber, Collectors.maxBy(Comparator.comparingDouble(Account::getBalance))));
+		System.out.println(topEarnerPerAccount1);
+//		to get raw value
+		Map<String, Double> topEarnerPerAccount2 = account2.stream()
+				.collect(Collectors.groupingBy(Account::getAccountNumber,
+						Collectors.collectingAndThen(Collectors.maxBy(Comparator.comparingDouble(Account::getBalance)),
+								a -> (double) a.map(Account::getBalance).orElse(0))));
+		System.out.println(topEarnerPerAccount2);
+
+//		Alternative Approach (Using toMap)
+		Map<String, Account> maxSalaryByDept = account2.stream().collect(Collectors.toMap(Account::getAccountNumber,
+				emp -> emp, (bal1, bal2) -> bal1.getBalance() > bal2.getBalance() ? bal1 : bal2));
 
 	}
 

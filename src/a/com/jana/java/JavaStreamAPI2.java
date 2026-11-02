@@ -9,7 +9,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 
-public class JavaStreamAPIAdvanced {
+public class JavaStreamAPI2 {
 //	A Stream is a sequence of elements that supports functional-style operations for processing data.
 //	A stream does not store data. It processes data from a source such as:
 //		Collection	Array	List	Set		File	Generated values
@@ -48,6 +48,7 @@ public class JavaStreamAPIAdvanced {
 		System.out.println(sum1);
 		System.out.println("------ reduce() Identity + accumulator ------");
 		System.out.println(num1.stream().reduce(0, (a, b) -> a + b));
+		//max integer
 		System.out.println(num1.stream().reduce(0, Integer::max));
 
 		System.out.println("------ reduce() without Identity ------");
