@@ -15,7 +15,15 @@ public class TreeMapClass {
 //			get()    → O(log n)
 //			put()    → O(log n)
 //			remove() → O(log n)
-//	
+
+//	Each Entry (Node) in the tree holds:
+//		1. key (the original key object)
+//		2. value (the associated data)
+//		3. left (pointer to the smaller child node)
+//		4. right (pointer to the larger child node)
+//		5. parent (pointer to the parent node)
+//		6. color (Red or Black, used to keep the tree balanced)
+
 //	How put() Works?
 //		TreeMap compares the new key with existing keys.
 //		example: 40 < 50 -> go left

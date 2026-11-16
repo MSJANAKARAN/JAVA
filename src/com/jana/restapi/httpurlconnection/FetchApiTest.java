@@ -24,7 +24,7 @@ public class FetchApiTest {
 		System.out.println(connection.toString());
 
 		InputStream output;
-		if (connection.getResponseCode() >= 200 && connection.getResponseCode() < 300) {
+		if (connection.getResponseCode() >= 200 && connection.getResponseCode() < 300) { //API call triggers
 
 			System.out.println("Response Code:" + connection.getResponseCode());
 

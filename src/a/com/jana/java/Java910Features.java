@@ -100,14 +100,18 @@ public class Java910Features implements CalculatorInterface9, CalculatorInterfac
 		System.out.println("Take While: ");
 
 		List.of(1, 2, 3, 4, 1, 2).stream().takeWhile(n -> n < 4).forEach(System.out::println);
-		// stops at 4
+//		Output: 1,2,3 (stops at 4)
 //		filter() evaluates every single element in the stream, 
 //		takeWhile() stops processing completely the moment it encounters the first element that does not match the condition
 
 //		dropWhile() - Skips elements while the condition is true. (NOT Short-Circuiting)
-		System.out.println("Drop While: ");
-		List.of(1, 2, 3, 4, 1, 2).stream().dropWhile(n -> n < 4).forEach(System.out::println);
-
+//		It drops elements while the predicate is true. is a short-circuiting operation for unordered streams(like List), 
+//		while for unordered stream (like Set)it cannot discard elements without reading them all (NOT Short-Circuiting)
+		System.out.println("Drop While(Ordered): ");
+		List.of(1, 3, 5, 4, 2).stream().dropWhile(n -> n < 4).forEach(System.out::println);
+		System.out.println("Drop While(Unordered): ");
+		Set.of(1, 3, 5, 4, 2).stream().dropWhile(n -> n < 4).forEach(System.out::println);
+		
 //		ofNullable() - Produces an empty stream instead of throwing an exception.. Useful for null-safe stream pipelines.
 //		Before
 //		Stream.of(null).forEach(System.out::println); //NPE
@@ -116,8 +120,10 @@ public class Java910Features implements CalculatorInterface9, CalculatorInterfac
 		Stream.ofNullable(null).forEach(System.out::println);
 //		Stream.iterate() method was improved by adding a new overloaded version that accepts a Predicate to act as a termination condition.
 		// Before
+		System.out.println("--------------------");
 		Stream<Integer> num3 = Stream.iterate(1, n -> n + 1);
 		num3.limit(4).forEach(System.out::println);
+		System.out.println("--------------------");
 		// Java 9 (The for Loop Equivalent)
 		Stream.iterate(1, n -> n < 5, n -> n + 1).forEach(System.out::println);
 

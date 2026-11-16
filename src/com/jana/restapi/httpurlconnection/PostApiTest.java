@@ -17,22 +17,24 @@ public class PostApiTest {
 		HttpURLConnection con = (HttpURLConnection) url.openConnection();
 
 		con.setRequestMethod("POST");
-		// setDoOutput default is false- if there is request payload, should be true to allow
-		//similarly setDoInput default is true, setting false will restrict output[bytecode to response]
+		// setDoOutput default is false- if there is request payload, should be true to
+		// allow
+		// similarly setDoInput default is true, setting false will restrict
+		// output[bytecode to response]
 		con.setDoOutput(true);
 		System.out.println(con.toString());
 
 		String json = "{\n" + "\"name\": \"FinApp\"," + "\"status\": \"POST UP\"" + "}";
 
 		con.addRequestProperty("Content-Type", "application/json");
-		
-		OutputStream input = con.getOutputStream();
+
+		OutputStream input = con.getOutputStream(); // API call triggers
 
 		input.write(json.getBytes());
-		
+
 		input.flush();
 		input.close();
-		
+
 		InputStream output;
 
 		if (con.getResponseCode() >= 200 && con.getResponseCode() < 300) {
@@ -45,6 +47,7 @@ public class PostApiTest {
 		String line;
 
 		StringBuilder resp = new StringBuilder();
+
 		if ((line = br.readLine()) != null) {
 			resp.append(line);
 		}

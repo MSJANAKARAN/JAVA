@@ -94,7 +94,7 @@ public class Java11Features {
 		System.out.println("===".repeat(20));
 //		==============================================================================
 //		String.strip()
-		String s1 = "   Hello   ";
+		String s1 = "   Hello🙂🙂   ";
 		System.out.println("Before Java 11: " +s1.trim()); //ASCII only
 		System.out.println("Java 11: " +s1.strip()); //Unicode aware
 		System.out.println("===".repeat(20));

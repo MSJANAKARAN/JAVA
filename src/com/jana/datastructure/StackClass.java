@@ -7,7 +7,7 @@ public class StackClass {
 //	New elements are always pushed on top.
 //	Removal (pop) also happens only from the top.
 //	This ensures a strict order: last in → first out.
-//	Stack Class is defined in the java.util package. Internally, it extends the Vector class.
+//	Stack class is defined in the java.util package. Internally, it extends the Vector class.
 //	Stack class maintains insertion order and allows duplicates and null values.
 //	Grows dynamically when its capacity is exceeded
 //

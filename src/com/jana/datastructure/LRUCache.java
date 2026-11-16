@@ -23,6 +23,7 @@ public class LRUCache {
 //		cache.get(1): return -1 (not found)
 //		cache.get(3): return 3 , (3,3) will moved to the highest priority.
 //		cache.get(4): return 4 ,  (4,4) moved to the highest priority.
+//	Java’s LinkedList is implemented as a doubly linked list under the hood.
 	private static int capacity;
 	private static Map<Integer,Integer> cacheMap;
 	private static LinkedList<Integer> lru;

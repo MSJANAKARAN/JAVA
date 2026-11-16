@@ -57,7 +57,8 @@ public class Java21Features {
 //					()-> System.out.println("Virtual Thread running: "+Thread.currentThread())
 //					);
 		
-//		Using an Executor ServiceFor managing multiple tasks, Java 21 introduced Executors.newVirtualThreadPerTaskExecutor(). 
+//		Using an Executor Service
+//		For managing multiple tasks, Java 21 introduced Executors.newVirtualThreadPerTaskExecutor(). 
 //		This executor does not pool threads; instead, it spawns a brand new virtual thread for every single task submitted.
 		
 //			try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {

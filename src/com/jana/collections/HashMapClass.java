@@ -5,10 +5,10 @@ import java.util.HashMap;
 public class HashMapClass {
 //	Java 1.2: HashMap was introduced
 //	A HashMap internally consists of an array called buckets.
-//	Initial capacoty 0 during hashmap creation.
+//	Initial capacity 0 during hashmap creation.
 //	During first put, hashmap initializes default capacity of 16. load factor of 0.75
 //	can define both capacity and load factor in a HashMap. => new HashMap<>(initialCapacity, loadFactor); ex: new HashMap<>(64,0.75)
-//	capcity will be in 16,32,64,128... upto 2power 30
+//	capacity will be in 16,32,64,128... upto 2power 30
 //	While inserting data:
 //		Compute the key's hash code. int hash = key.hashCode();
 //		Improve hash distribution. hash = hash ^ (hash >>> 16)
@@ -27,6 +27,13 @@ public class HashMapClass {
 //	Rehashing (Resizing)
 //	LoadFactor = 0.75 for bucket capacity , initial capacity = 16
 //		when number exceeds threshold 0.75 of capacity or bucket size exceeds 8 and less than 64 capacity, Capacity doubles.
+	
+//	A single Node contains four pieces of data:
+//		1. hash (the computed hash code)
+//		2. key (the actual original key object)
+//		3. value (the data you want to store)
+//		4. next (a pointer to the next Node in the bucket, if there is a collision)
+
 //	Retrieving Data (get(key))
 //		Compute the hash
 //		Find the bucket index

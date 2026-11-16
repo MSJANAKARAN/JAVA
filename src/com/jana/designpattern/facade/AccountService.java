@@ -1,7 +1,5 @@
 package com.jana.designpattern.facade;
 
-import java.util.Objects;
-
 public class AccountService {
 
 	public void debit(String fromAccount, double amount) {

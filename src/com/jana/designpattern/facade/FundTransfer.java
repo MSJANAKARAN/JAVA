@@ -1,7 +1,7 @@
 package com.jana.designpattern.facade;
 
 public class FundTransfer {
-
+//	FundTransfer uses Composition.
 	private AuthenticationService auth = new AuthenticationService();
 	
 	private AccountService account = new AccountService();

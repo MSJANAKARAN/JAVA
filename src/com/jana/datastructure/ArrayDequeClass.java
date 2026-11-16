@@ -7,7 +7,7 @@ import java.util.Iterator;
 public class ArrayDequeClass {
 
 //	ArrayDeque is a resizable-array implementation of the Deque interface in Java. 
-//	it allows elements to be added or removed from both ends efficiently and it not allow null element insertion .
+//	it allows elements to be added or removed from both ends efficiently and it does not allow null element insertion .
 //
 //	ArrayDeque grows dynamically.
 //	It generally provides faster operations than LinkedList as it is more cache friendly and 

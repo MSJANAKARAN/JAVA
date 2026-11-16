@@ -155,16 +155,19 @@ public class Java14Features {
 		System.out.println("Java 12 teeing: " + average); // Output: 25.0
 
 		System.out.println("===Java 16 - Stream Modernization ===");
-//		Direct .toList() MethodYou no longer need to write .collect(Collectors.toList()). 
+//		Direct .toList() Method
+//		You no longer need to write .collect(Collectors.toList()). 
 //		You can now call .toList() directly on any object stream pipeline.java
+		
 		// Modern Java 16+ syntax
 		List<String> list = Stream.of("A", "B", "C").toList();
 		System.out.println("Java 16 toList(): " + list);
 //		Key Difference: This returns an unmodifiable list structure that is memory-optimised and 
 //		allows null elements (unlike Java 10's toUnmodifiableList())
 
-//		.mapMulti() Intermediate OperationmapMulti() was added to replace memory-heavy usage of
-//		.flatMap() when replacing stream elements with a small, predictable number of elements.
+//		.mapMulti() Intermediate Operation
+//		mapMulti() was added to replace memory-heavy usage of .flatMap() 
+//		when replacing stream elements with a small, predictable number of elements.
 //		Why it matters: Instead of allocating a completely new stream object per element like .flatMap() does, 
 //		.mapMulti() uses a stateless Consumer architecture, saving heaps of garbage collection overhead.
 		List<Integer> duplicated = Stream.of(1, 2, 3).<Integer>mapMulti((number, consumer) -> {

@@ -34,6 +34,12 @@ public class Java17Features {
 //		sealed: Only a newly specified list of permitted classes can extend it.
 //		non-sealed: Anyone can extend this subclass
 
+//		omitting the modifiers makes it behave exactly like a unset non-sealed  class because anyone can extend it.
+		
+//		A standard class with no modifiers is like an unlocked door (anyone can walk through).
+//		A non-sealed class is a door that was originally locked by its parent, but you have explicitly 
+//		turned the key to unlock it for everyone else down the line.
+		
 //		public sealed class Account permits SavingsAccount, LoanAccount{
 //			
 //		}
@@ -46,6 +52,7 @@ public class Java17Features {
 //		non-sealed class LoanAccount extends Account{
 //			
 //		}
+//		
 //		Trying below will throw compile error
 //		class CurrentAccount extends Account{
 //			
